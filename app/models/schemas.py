@@ -6,7 +6,7 @@ class ProductCreateSchema(BaseModel):
     product_name: str = Field(..., description="Tên sản phẩm")
     strategy_type: str = Field(..., description="Chiến lược xuất kho: 'FIFO' hoặc 'LIFO'")
 
-    class Config:
+    class Config: 
         from_attributes = True
 
 class StockInSchema(BaseModel):

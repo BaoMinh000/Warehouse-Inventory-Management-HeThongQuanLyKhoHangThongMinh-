@@ -1,3 +1,33 @@
 Lệnh này sẽ ghi toàn bộ danh sách thư viện + phiên bản hiện tại vào file requirements.txt.
     pip freeze > requirements.txt
+    pip install -r requirements.txt
+vẽ cây cấu trúc thư mục cho dự án
+function Draw-Tree {
+    param(
+        [string]$Path,
+        [string]$Prefix = "",
+        [string[]]$ExcludeDirs = @("venv",".venv",".env","__pycache__",".vscode",".pytest_cache",".git")
+    )
 
+    $items = Get-ChildItem -Path $Path -Force | Where-Object {
+        -not ($_.Name -like "*.pyc" -or $_.Name -like "*.db") -and
+        -not ($ExcludeDirs -contains $_.Name)
+    }
+
+    for ($i = 0; $i -lt $items.Count; $i++) {
+        $item = $items[$i]
+        $isLast = ($i -eq $items.Count - 1)
+        $connector = if ($isLast) { "└── " } else { "├── " }
+
+        Write-Output ($Prefix + $connector + $item.Name)
+
+        if ($item.PSIsContainer) {
+            $newPrefix = if ($isLast) { $Prefix + "    " } else { $Prefix + "│   " }
+            Draw-Tree -Path $item.FullName -Prefix $newPrefix -ExcludeDirs $ExcludeDirs
+        }
+    }
+}
+
+# Chạy và ghi ra file StructureProject.txt trong thư mục gốc
+"warehouse_management/" | Out-File ".\StructureProject.txt"
+Draw-Tree "." | Out-File ".\StructureProject.txt" -Append

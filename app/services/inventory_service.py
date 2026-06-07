@@ -30,25 +30,25 @@ class InventoryService:
             )
             
             # 3. Tìm lại Node vừa thêm để nạp các lô hàng (Batches) của nó vào Queue/Stack
-            ram_node = self.bst.search(db_prod.barcode)
+            ram_node = self.bst.search(db_prod.barcode) # VD: Tìm Node có mã vạch "1234567890" lưu vào ram_node kiểu dữ liệu ProductNode trên RAM
             
             # Sắp xếp các lô hàng theo thời gian nhập kho tăng dần từ SQL
             db_batches = self.db.query(BatchModel)\
                 .filter(BatchModel.barcode == db_prod.barcode)\
                 .order_by(BatchModel.import_date.asc()).all()
                 
-            for db_batch in db_batches:
+            for db_batch in db_batches: # VD: Duyệt qua từng lô hàng của sản phẩm "1234567890" lấy thông tin từ SQL
                 ram_batch = DSABatch(
                     batch_id=db_batch.batch_id,
                     quantity=db_batch.quantity,
                     expiry_date=db_batch.expiry_date,
                     import_date=db_batch.import_date
                 )
-                # Nạp lô hàng vào cấu trúc RAM (Hàm tự động Enqueue hoặc Push tùy cấu hình sản phẩm)
+                # Tùy theo chiến lược xuất kho của sản phẩm (FIFO hay LIFO), xếp lô hàng vào Queue hoặc Stack trên RAM
                 if ram_node.strategy_type == "FIFO":
-                    ram_node.stock_collection.enqueue(ram_batch)
+                    ram_node.stock_collection.enqueue(ram_batch) # Nếu FIFO thì xếp hàng vào cuối Queue 
                 else:
-                    ram_node.stock_collection.push(ram_batch)
+                    ram_node.stock_collection.push(ram_batch) # Nếu LIFO thì xếp hàng lên đỉnh Stack
             count += 1
         return count
 

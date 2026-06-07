@@ -7,3 +7,5 @@ pytest-cov
 PyQt6
 fastapi
 uvicorn
+requests
+python-dotenv

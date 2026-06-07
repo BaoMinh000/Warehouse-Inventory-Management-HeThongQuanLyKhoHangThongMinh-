@@ -129,3 +129,19 @@ def get_catalog(db: Session = Depends(get_db)):
             "strategy_type": prod[2]
         })
     return {"total_products": len(result), "catalog": result}
+
+@router.get("/product/{barcode}")
+def search_product(barcode: str, db: Session = Depends(get_db)):
+    """API 5: Tìm kiếm sản phẩm theo mã vạch (Tìm kiếm trên cây BST trên RAM)"""
+    service = InventoryService(db)
+    service.bootstrap_system()
+    
+    product_node = service.bst.search(barcode)
+    if not product_node:
+        raise HTTPException(status_code=404, detail=f"Sản phẩm có mã vạch {barcode} không tồn tại.")
+    
+    return {
+        "barcode": product_node.barcode,
+        "product_name": product_node.product_name,
+        "strategy_type": product_node.strategy_type
+    }

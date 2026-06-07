@@ -115,40 +115,41 @@ The project follows a layered architecture:
 
 ```text
 warehouse_management/
-│
-├── app/
-│   ├── __init__.py
-│   │
-│   ├── dsa/
-│   │   ├── __init__.py
+├── app
+│   ├── api
+│   │   ├── routes.py
+│   │   └── __init__.py
+│   ├── dsa
 │   │   ├── bst.py
 │   │   ├── queue.py
-│   │   └── stack.py
-│   │
-│   ├── models/
-│   │   ├── __init__.py
+│   │   ├── stack.py
+│   │   └── __init__.py
+│   ├── models
 │   │   ├── db_models.py
-│   │   └── schemas.py
-│   │
-│   ├── services/
-│   │   ├── __init__.py
+│   │   ├── schemas.py
+│   │   └── __init__.py
+│   ├── services
+│   │   ├── expiry_service.py
 │   │   ├── inventory_service.py
-│   │   └── expiry_service.py
-│   │
-│   └── api/
-│       ├── __init__.py
-│       └── routes.py
-│
-├── tests/
+│   │   └── __init__.py
+│   ├── database.py
+│   └── __init__.py
+├── tests
 │   ├── conftest.py
 │   ├── test_bst.py
 │   └── test_inventory.py
-│
-├── .env
+├── ui
+│   ├── assets
+│   ├── components
+│   └── main_window.py
 ├── .gitignore
-├── requirements.txt
+├── Command_Guild.txt
+├── main.py
 ├── README.md
-└── main.py
+├── requirements.txt
+├── settings.json
+└── StructureProject.txt
+
 ```
 
 ---
