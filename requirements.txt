@@ -1,0 +1,9 @@
+sqlalchemy>=2.0
+pydantic>=2.0
+python-dotenv
+python-dateutil
+pytest
+pytest-cov
+PyQt6
+fastapi
+uvicorn
