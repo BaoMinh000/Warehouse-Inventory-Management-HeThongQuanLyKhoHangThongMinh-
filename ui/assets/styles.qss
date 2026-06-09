@@ -1,0 +1,104 @@
+/* Tổng quan ứng dụng */
+QWidget {
+    background-color: #0b0f17;
+    color: #e2e8f0;
+    font-family: "Segoe UI", system-ui, sans-serif;
+    font-size: 12px;
+}
+
+/* Các Panel bọc nội dung (Dashboard, Table Container) */
+QFrame#panel {
+    background-color: #121824;
+    border: 1px solid #1e2740;
+    border-radius: 8px;
+}
+
+QFrame#stat_card {
+    background-color: #121824;
+    border: 1px solid #1e2740;
+    border-radius: 6px;
+}
+
+/* Định dạng bảng biểu QTableWidget */
+QTableWidget {
+    background-color: #121824;
+    border: none;
+    gridline-color: #1e2740;
+    selection-background-color: #1a2e4a;
+    selection-color: #5b9cf6;
+}
+
+QTableWidget::item {
+    padding-left: 10px;
+    border-bottom: 1px solid #1e2740;
+}
+
+QHeaderView::section {
+    background-color: #161c2a;
+    color: #8899b4;
+    padding: 6px 10px;
+    border: none;
+    border-bottom: 1px solid #1e2740;
+    font-weight: 500;
+}
+
+/* Input tìm kiếm và các ô nhập liệu */
+QLineEdit {
+    background-color: #161c2a;
+    border: 1px solid #2a3347;
+    border-radius: 6px;
+    padding: 6px 10px;
+    color: #e2e8f0;
+}
+QLineEdit:focus {
+    border: 1px solid #378ADD;
+}
+
+/* Button hành động chính */
+QPushButton#action_btn {
+    background-color: #378ADD;
+    color: #ffffff;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 14px;
+    font-weight: 500;
+}
+QPushButton#action_btn:hover {
+    background-color: #4ba3e3;
+}
+
+/* Thanh tiến trình hạn sử dụng (ProgressBar trong ExpiryItem) */
+QProgressBar {
+    background-color: #1e2740;
+    border: none;
+    border-radius: 2px;
+    text-align: center;
+}
+QProgressBar::chunk {
+    background-color: #2fd89c; /* Màu xanh an toàn */
+    border-radius: 2px;
+}
+QProgressBar::chunk#progress_warning {
+    background-color: #e8a042; /* Màu cam cảnh báo */
+}
+QProgressBar::chunk#progress_danger {
+    background-color: #f07070; /* Màu đỏ nguy hiểm/hết hạn */
+}
+
+/* Tùy chỉnh thanh cuộn đẹp hơn */
+QScrollBar:vertical {
+    background: #0b0f17;
+    width: 6px;
+    margin: 0px;
+}
+QScrollBar::handle:vertical {
+    background: #2a3347;
+    min-height: 20px;
+    border-radius: 3px;
+}
+QScrollBar::handle:vertical:hover {
+    background: #378ADD;
+}
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+    height: 0px;
+}

@@ -3,7 +3,7 @@ from typing import Optional, List, Tuple
 from app.dsa.queue import Queue
 from app.dsa.stack import Stack
 
-class Batch:
+class Batch: # Lô hàng
     """Đại diện cho một lô hàng cụ thể trong kho"""
     def __init__(self, batch_id: str, quantity: int, expiry_date, import_date):
         self.batch_id = batch_id
@@ -11,12 +11,13 @@ class Batch:
         self.expiry_date = expiry_date
         self.import_date = import_date
         
-class ProductNode:
+class ProductNode: 
     """Đại diện cho một Node sản phẩm trên cây tìm kiếm nhị phân (BST)"""
-    def __init__(self, barcode: str, product_name: str, strategy_type: str):
-        self.barcode: str = barcode               # Khóa chính (Key) điều hướng cây BST
-        self.product_name: str = product_name
-        self.strategy_type: str = strategy_type   # Nhận giá trị "FIFO" hoặc "LIFO"
+    def __init__(self, barcode: str, product_name: str, strategy_type: str, category: str = "Thực phẩm"):
+        self.barcode: str = barcode               # Khóa chính (Key) điều hướng và sắp xếp cây BST
+        self.product_name: str = product_name     # Tên sản phẩm
+        self.category: str = category             # Danh mục sản phẩm (Mặc định: "Thực phẩm")
+        self.strategy_type: str = strategy_type   # Chiến lược xuất kho: "FIFO" hoặc "LIFO"  
         
         # Khởi tạo cấu trúc lưu trữ lô hàng tương ứng với chiến lược cấu hình
         if strategy_type == "FIFO":
@@ -30,14 +31,14 @@ class ProductNode:
         self.right: Optional[ProductNode] = None
 
 
-class BinarySearchTree:
+class BinarySearchTree: 
     """Cây tìm kiếm nhị phân quản lý danh mục toàn bộ sản phẩm in-memory"""
     def __init__(self):
         self.root: Optional[ProductNode] = None
 
-    def insert(self, barcode: str, product_name: str, strategy_type: str) -> None:
+    def insert(self, barcode: str, product_name: str, strategy_type: str, category: str = "Thực phẩm") -> None:
         """Thêm một sản phẩm mới vào danh mục cây BST"""
-        new_node = ProductNode(barcode, product_name, strategy_type)
+        new_node = ProductNode(barcode, product_name, strategy_type, category)
         if self.root is None:
             self.root = new_node
             return
@@ -70,7 +71,7 @@ class BinarySearchTree:
                 current = current.right
         return None
 
-    def get_all_products(self) -> List[Tuple[str, str, str]]:
+    def get_all_products(self) -> List[Tuple[str, str, str, str]]:
         """Duyệt cây theo thứ tự In-Order để lấy toàn bộ danh mục sắp xếp theo Barcode tăng dần"""
         products = []
         self._in_order(self.root, products)
@@ -79,7 +80,7 @@ class BinarySearchTree:
     def _in_order(self, node: Optional[ProductNode], products: list):
         if node is not None:
             self._in_order(node.left, products)
-            products.append((node.barcode, node.product_name, node.strategy_type))
+            products.append((node.barcode, node.product_name, node.category, node.strategy_type))
             self._in_order(node.right, products)
 
     def delete(self, barcode: str) -> bool:
@@ -109,6 +110,7 @@ class BinarySearchTree:
             temp = self._min_value_node(root.right)
             root.barcode = temp.barcode
             root.product_name = temp.product_name
+            root.category = temp.category
             root.strategy_type = temp.strategy_type
             root.stock_collection = temp.stock_collection
             

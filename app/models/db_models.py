@@ -1,7 +1,7 @@
 # app/models/db_models.py
 from datetime import datetime
 import uuid
-from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, CheckConstraint
+from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, CheckConstraint, func
 from sqlalchemy.orm import declarative_base, relationship
 
 # Lớp nền tảng của SQLAlchemy để các model khác kế thừa
@@ -18,12 +18,20 @@ class ProductModel(Base):
     barcode = Column(String(50), primary_key=True)
     product_name = Column(String(255), nullable=False)
     
+    #Trường danh mục sản phẩm để đồng bộ với BST Node và API
+    category = Column(String(100), nullable=False, default="Thực phẩm")
+    
     # Chiến lược xuất kho: Chỉ cho phép nhận giá trị 'FIFO' hoặc 'LIFO'
     strategy_type = Column(String(10), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     # Mối quan hệ 1-Nhiều: Một sản phẩm có thể có nhiều lô hàng trong kho
     batches = relationship("BatchModel", back_populates="product", cascade="all, delete-orphan")
+
+    # Ràng buộc điều kiện dưới SQL: strategy_type bắt buộc phải là FIFO hoặc LIFO
+    __table_args__ = (
+        CheckConstraint("strategy_type IN ('FIFO', 'LIFO')", name="check_product_strategy_type"),
+    )
 
 
 class BatchModel(Base):
@@ -39,7 +47,7 @@ class BatchModel(Base):
     # Số lượng tồn kho của lô hàng đó (Bắt buộc phải >= 0)
     quantity = Column(Integer, nullable=False)
     expiry_date = Column(DateTime, nullable=False)   # Hạn sử dụng
-    import_date = Column(DateTime, nullable=False)   # Ngày nhập kho để phân tách FIFO/LIFO
+    import_date = Column(DateTime, nullable=False, default=datetime.utcnow)   # Ngày nhập kho để phân tách FIFO/LIFO
 
     # Mối quan hệ ngược lại với bảng ProductModel
     product = relationship("ProductModel", back_populates="batches")
@@ -67,3 +75,8 @@ class InventoryLogModel(Base):
     # Số lượng biến động
     quantity_changed = Column(Integer, nullable=False)
     logged_at = Column(DateTime, default=datetime.utcnow)
+
+    # Ràng buộc điều kiện dưới SQL: hành động phải là IMPORT hoặc EXPORT
+    __table_args__ = (
+        CheckConstraint("action_type IN ('IMPORT', 'EXPORT')", name="check_log_action_type"),
+    )

@@ -1,11 +1,13 @@
 # app/api/routes.py
+# Đây là file định nghĩa các đường link API (Endpoints) của FastAPI, xử lý logic nghiệp vụ và tương tác với DB Models thông qua InventoryService. Các API này sẽ được gọi từ UI thông qua lớp API Client.
+# File ở Server Backend
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 from app.services.inventory_service import InventoryService
 from app.models.db_models import ProductModel
-from app.models.schemas import ProductCreateSchema, StockInSchema, StockOutSchema
+
 # Khởi tạo router của FastAPI
 router = APIRouter(prefix="/api/inventory", tags=["Inventory Management"])
 
@@ -14,6 +16,7 @@ router = APIRouter(prefix="/api/inventory", tags=["Inventory Management"])
 class ProductCreateSchema(BaseModel):
     barcode: str = Field(..., description="Mã vạch duy nhất của sản phẩm")
     product_name: str = Field(..., description="Tên sản phẩm")
+    category: str = Field(default="Thực phẩm", description="Danh mục sản phẩm")
     strategy_type: str = Field(..., description="Chiến lược xuất kho: 'FIFO' hoặc 'LIFO'")
 
 class StockInSchema(BaseModel):
@@ -27,8 +30,7 @@ class StockOutSchema(BaseModel):
 
 
 # --- HÀM TRỢ GIÚP LẤY KẾT NỐI DATABASE (DEPENDENCY) ---
-# Hàm này giả định bạn đã cấu hình kết nối DB trong file app/database.py (sẽ viết ở bước sau)
-from app.database import SessionLocal  # CHUẨN
+from app.database import SessionLocal 
 
 def get_db():
     db = SessionLocal()
@@ -37,13 +39,13 @@ def get_db():
     finally:
         db.close()
 
+
 # --- ĐỊNH NGHĨA CÁC ĐƯỜNG LINK API (ENDPOINTS) ---
 
 @router.post("/products", status_code=status.HTTP_201_CREATED)
 def create_product(payload: ProductCreateSchema, db: Session = Depends(get_db)):
     """API 1: Tạo danh mục sản phẩm mới (Lưu SQL và Thêm vào cây BST trên RAM)"""
     service = InventoryService(db)
-    # Đồng bộ nạp lại trạng thái cây từ DB hiện tại trước khi xử lý
     service.bootstrap_system()
     
     try:
@@ -51,21 +53,30 @@ def create_product(payload: ProductCreateSchema, db: Session = Depends(get_db)):
         new_product = ProductModel(
             barcode=payload.barcode,
             product_name=payload.product_name,
+            category=payload.category,
             strategy_type=payload.strategy_type
         )
         db.add(new_product)
         db.commit()
         
         # 2. Đồng bộ thêm node vào cây BST trên RAM
-        service.bst.insert(payload.barcode, payload.product_name, payload.strategy_type)
+        service.bst.insert(
+            barcode=payload.barcode, 
+            product_name=payload.product_name, 
+            strategy_type=payload.strategy_type,
+            category=payload.category
+        )
         
         return {"message": f"Tạo danh mục sản phẩm '{payload.product_name}' thành công."}
     except ValueError as e:
         db.rollback()
         raise HTTPException(status_code=400, detail=str(e))
-    except Exception:
+    except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=400, detail="Mã vạch sản phẩm đã tồn tại.")
+        # Giữ lại logic phân tích lỗi trùng khóa hoặc lỗi hệ thống tổng quát
+        if "UNIQUE" in str(e) or "Mã vạch" in str(e):
+            raise HTTPException(status_code=400, detail=f"Mã vạch {payload.barcode} đã tồn tại trong cơ sở dữ liệu.")
+        raise HTTPException(status_code=500, detail=f"Lỗi hệ thống khi tạo sản phẩm: {str(e)}")
 
 @router.post("/stock-in")
 def stock_in(payload: StockInSchema, db: Session = Depends(get_db)):
@@ -91,6 +102,8 @@ def stock_in(payload: StockInSchema, db: Session = Depends(get_db)):
         }
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Lỗi hệ thống khi nhập kho: {str(e)}")
 
 @router.post("/stock-out")
 def stock_out(payload: StockOutSchema, db: Session = Depends(get_db)):
@@ -107,10 +120,12 @@ def stock_out(payload: StockOutSchema, db: Session = Depends(get_db)):
         return {
             "message": f"Xuất kho thành công tổng cộng {payload.quantity} sản phẩm.",
             "barcode": payload.barcode,
-            "details": exported_batches # Trả về mảng danh sách chi tiết các lô bị trừ số lượng cho UI hiển thị
+            "details": exported_batches # Trả về danh sách chi tiết các lô bị trừ số lượng
         }
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Lỗi hệ thống khi xuất kho: {str(e)}")
 
 @router.get("/products")
 def get_catalog(db: Session = Depends(get_db)):
@@ -118,7 +133,7 @@ def get_catalog(db: Session = Depends(get_db)):
     service = InventoryService(db)
     service.bootstrap_system()
     
-    # Chạy thuật toán duyệt cây để lấy danh sách sắp xếp tăng dần mà không cần ORDER BY của SQL
+    # Chạy thuật toán duyệt cây để lấy danh sách sắp xếp tăng dần theo mã vạch
     sorted_products = service.bst.get_all_products()
     
     result = []
@@ -126,7 +141,8 @@ def get_catalog(db: Session = Depends(get_db)):
         result.append({
             "barcode": prod[0],
             "product_name": prod[1],
-            "strategy_type": prod[2]
+            "category": prod[2],
+            "strategy_type": prod[3]
         })
     return {"total_products": len(result), "catalog": result}
 
@@ -143,5 +159,6 @@ def search_product(barcode: str, db: Session = Depends(get_db)):
     return {
         "barcode": product_node.barcode,
         "product_name": product_node.product_name,
+        "category": product_node.category,
         "strategy_type": product_node.strategy_type
     }

@@ -69,16 +69,32 @@ def start_backend():
 
 def start_frontend():
     """Hàm khởi chạy cửa sổ giao diện PyQt6"""
+    # Import đặt bên trong hàm để tránh vòng lặp import (Circular Import) nếu có
     from PyQt6.QtWidgets import QApplication
     from ui.main_window import MainWindow
-
-    # Chờ 1.5 giây để máy chủ Backend kịp hoàn tất tiến trình bootstrap dữ liệu lên RAM
+    from app.services.api_client import InventoryAPIClient
+    # 1. Chờ 1.5 giây để máy chủ Backend kịp hoàn tất tiến trình bootstrap dữ liệu lên RAM
     time.sleep(1.5)
     
+    # 2. Khởi tạo ứng dụng Qt
     qt_app = QApplication(sys.argv)
-    ui_window = MainWindow()
+    #    Khỏi tạo API Client để UI có thể gọi API ngay khi cần (ví dụ: nạp danh mục sản phẩm)
+    api_client = InventoryAPIClient()
+
+    # 3. Đảm bảo ứng dụng đóng sạch sẽ, không bị treo tiến trình ngầm khi bấm [X]
+    qt_app.setQuitOnLastWindowClosed(True)
+    
+    # 4. Khởi tạo và hiển thị cửa sổ chính WMS 2.0
+    ui_window = MainWindow(api_client=api_client)
     ui_window.show()
-    sys.exit(qt_app.exec())
+    
+    # 5. Chạy vòng lặp sự kiện của Qt và bắt mã lỗi khi thoát
+    exit_code = qt_app.exec()
+    
+    # Thực hiện dọn dẹp backend tại đây nếu cần (ví dụ: đóng kết nối DB, ngắt kết nối socket...)
+    # print("Đang tắt hệ thống quản lý kho...")
+    
+    sys.exit(exit_code)
 
 
 if __name__ == "__main__":
