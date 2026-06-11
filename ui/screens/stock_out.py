@@ -60,16 +60,16 @@ class StockOutScreen(QWidget):
         title_lay.addWidget(subtitle)
         
         # Đã mở lại biến lớp self.history_btn để thanh menu bên ngoài liên kết điều hướng
-        self.history_btn = QPushButton("🕒 Lịch sử xuất")
-        self.history_btn.setStyleSheet("""
-            QPushButton { background: #161b26; border: 1px solid #2a3347; color: #e2e8f0; 
-                          padding: 8px 14px; border-radius: 6px; font-weight: bold; }
-            QPushButton:hover { background: #1e2740; border-color: #3a4560; }
-        """)
+        # self.history_btn = QPushButton("🕒 Lịch sử xuất")
+        # self.history_btn.setStyleSheet("""
+        #     QPushButton { background: #161b26; border: 1px solid #2a3347; color: #e2e8f0; 
+        #                   padding: 8px 14px; border-radius: 6px; font-weight: bold; }
+        #     QPushButton:hover { background: #1e2740; border-color: #3a4560; }
+        # """)
         
         header.addLayout(title_lay)
         header.addStretch()
-        header.addWidget(self.history_btn)
+        # header.addWidget(self.history_btn)
         layout.addLayout(header)
 
         # --- BODY CONTENT (Chia cột Trái - Phải) ---

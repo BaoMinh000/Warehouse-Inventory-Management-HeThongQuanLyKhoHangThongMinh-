@@ -140,3 +140,17 @@ class InventoryService:
 
         self.db.commit()
         return export_details
+    
+    def get_inventory_history(self) -> list:
+        """API 6: Lấy toàn bộ lịch sử biến động kho từ SQL DB, trả về dạng list các dict để UI hiển thị (Có thể thêm tham số filter để lọc theo Nhập/Xuất)"""
+        logs = self.db.query(InventoryLogModel).order_by(InventoryLogModel.logged_at.desc()).all()
+        history = []
+        for log in logs:
+            history.append({
+                "timestamp": log.logged_at.strftime("%Y-%m-%d %H:%M:%S"),
+                "barcode": log.barcode,
+                "batch_id": log.batch_id,
+                "action_type": log.action_type,
+                "quantity_changed": log.quantity_changed
+            })
+        return history

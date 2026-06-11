@@ -208,10 +208,11 @@ class StockInScreen(QWidget):
             return
         try:
             # Giả định Backend hỗ trợ API search_product qua Client
-            if hasattr(self.api_client, 'search_product'):
+            if hasattr(self.api_client, 'search_product'): # Nếu API Client đã map endpoint này, gọi trực tiếp
                 prod_data = self.api_client.search_product(barcode)
             else:
                 # Nếu client chưa map endpoint này, gọi tạm bằng requests/fallback hoặc bỏ qua
+                print("API Client chưa hỗ trợ search_product, bỏ qua bước tự động điền tên sản phẩm.")
                 return
 
             if prod_data:

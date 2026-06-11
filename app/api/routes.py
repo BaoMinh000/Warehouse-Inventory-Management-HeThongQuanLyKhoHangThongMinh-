@@ -28,7 +28,11 @@ class StockOutSchema(BaseModel):
     barcode: str = Field(..., description="Mã vạch sản phẩm xuất kho")
     quantity: int = Field(..., gt=0, description="Số lượng cần xuất, phải lớn hơn 0")
 
-
+class ProductResponseSchema(BaseModel):
+    barcode: str
+    product_name: str
+    category: str
+    strategy_type: str
 # --- HÀM TRỢ GIÚP LẤY KẾT NỐI DATABASE (DEPENDENCY) ---
 from app.database import SessionLocal 
 
@@ -162,3 +166,10 @@ def search_product(barcode: str, db: Session = Depends(get_db)):
         "category": product_node.category,
         "strategy_type": product_node.strategy_type
     }
+@router.get("/history")
+def history_view(db: Session = Depends(get_db)):
+    """API 6: Lấy toàn bộ lịch sử biến động kho (Dữ liệu mẫu tĩnh cho UI)"""
+    # Lấy dữ liệu từ SQL DB
+    service = InventoryService(db)
+    HISTORY_DATA = service.get_inventory_history()
+    return {"history": HISTORY_DATA}

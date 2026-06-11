@@ -38,7 +38,7 @@ class MainWindow(QMainWindow):
         self.screens = {
             "dashboard": DashboardScreen(self),
             "products":  ProductsScreen(self, api_client=self.api_client),
-            "warehouse_manager": WarehouseManagerScreen(self), # Màn hình Quản lý kho
+            "warehouse_manager": WarehouseManagerScreen(self, api_client=self.api_client), # Màn hình Quản lý kho
             "stockin":   StockInScreen(self),
             "stockout":  StockOutScreen(self),
             "expiry":    ExpiryScreen(self),

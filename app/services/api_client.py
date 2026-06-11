@@ -104,3 +104,37 @@ class InventoryAPIClient:
                 raise ValueError(error_msg)
         except requests.exceptions.ConnectionError:
             raise ConnectionError("Mất kết nối tới máy chủ Backend khi thực hiện xuất kho.")
+        
+    def search_product(self, barcode: str) -> dict:
+        """Gọi API GET để tìm kiếm thông tin chi tiết của một sản phẩm theo mã vạch. Trả về dict chứa thông tin sản phẩm nếu tìm thấy, hoặc dict rỗng nếu không tìm thấy."""
+        url = f"{self.base_url}/product/{barcode}"
+        print(f"API Client đang gọi GET {url} để tìm kiếm sản phẩm với barcode: {barcode}")
+        try:
+            response = requests.get(url)
+            if response.status_code == 200:
+                return response.json()
+            elif response.status_code == 404:
+                return {}  # Trả về dict rỗng nếu không tìm thấy sản phẩm
+            else:
+                error_msg = response.json().get("detail", "Lỗi không xác định khi tìm kiếm sản phẩm.")
+                raise ValueError(error_msg)
+        except requests.exceptions.ConnectionError:
+            raise ConnectionError("Mất kết nối tới máy chủ Backend khi thực hiện tìm kiếm sản phẩm.")
+        except Exception as e:
+            raise ValueError(f"Lỗi hệ thống khi tìm kiếm sản phẩm: {str(e)}")
+        
+    def get_inventory_history(self) -> list:
+        """Gọi API GET để lấy toàn bộ lịch sử biến động kho từ Server Backend. Trả về danh sách các bản ghi lịch sử."""
+        url = f"{self.base_url}/history"
+        try:
+            response = requests.get(url)
+            if response.status_code == 200:
+                data = response.json()
+                return data.get("history", []) # Trả về danh sách lịch sử hoặc list rỗng nếu không có dữ liệu
+            else:
+                print(f"[API ERROR] Status code: {response.status_code}")
+                return []
+        except requests.exceptions.ConnectionError:
+            raise ConnectionError("Mất kết nối tới máy chủ Backend khi lấy lịch sử kho.")
+        except Exception as e:
+            raise ValueError(f"Lỗi hệ thống khi lấy lịch sử kho: {str(e)}")

@@ -40,6 +40,7 @@ class ProductsScreen(QWidget):
             # Đổ dữ liệu mới nhất vừa quét từ Server vào bảng hiển thị
             self.table.load_data(self.products_catalog, status=True, action=True)
             print(f"[UI] Đã tải và làm mới thành công {len(self.products_catalog)} sản phẩm trên bảng.")
+            print(f"[UI] Dữ liệu sản phẩm mẫu: {self.products_catalog[:2]}")  # In ra 2 sản phẩm đầu tiên để kiểm tra định dạng dữ liệu
             return self.products_catalog
         except ConnectionError as e:
             QMessageBox.critical(self, "Lỗi kết nối", str(e))
@@ -118,7 +119,7 @@ class ProductsScreen(QWidget):
         layout.addLayout(header)
 
         # Cấu hình DataTable
-        columns = ["Sản phẩm", "Barcode", "Danh mục", "Tồn kho", "Loại", "Trạng thái", "Thao tác"]
+        columns = ["Sản phẩm", "Barcode", "Danh mục",  "Loại", "Trạng thái", "Thao tác"] #"Tồn kho", 
         filters = ["Tất cả", "Thực phẩm", "Hóa mỹ phẩm", "Đồ uống", "Vật tư"]
         
         self.table = DataTable(columns, filters, self)

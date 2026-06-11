@@ -18,7 +18,7 @@ class ProductNode:
         self.product_name: str = product_name     # Tên sản phẩm
         self.category: str = category             # Danh mục sản phẩm (Mặc định: "Thực phẩm")
         self.strategy_type: str = strategy_type   # Chiến lược xuất kho: "FIFO" hoặc "LIFO"  
-        
+
         # Khởi tạo cấu trúc lưu trữ lô hàng tương ứng với chiến lược cấu hình
         if strategy_type == "FIFO":
             self.stock_collection = Queue()
@@ -124,3 +124,4 @@ class BinarySearchTree:
         while current.left is not None:
             current = current.left
         return current
+    
