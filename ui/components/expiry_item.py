@@ -4,11 +4,12 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt
 
 from ui.components.badge import Badge
+from ui.utils.theme import Theme  # Khai báo đường dẫn import file theme của bạn
 
 
 class ExpiryItem(QFrame):
     """
-    Single row in the expiry timeline.
+    Single row in the expiry timeline with cleaned label borders.
 
     Parameters
     ----------
@@ -19,24 +20,24 @@ class ExpiryItem(QFrame):
     """
 
     _CARD_STYLES = {
-        "critical": "background:#2a1215; border:1px solid #4a1e20;",
-        "warning":  "background:#2a1f0a; border:1px solid #4a3312;",
-        "safe":     "background:#161b26; border:1px solid #2a3347;",
+        "critical": f"background: {Theme.EXPIRY_BG_CRITICAL}; border: 1px solid {Theme.EXPIRY_BORDER_CRITICAL};",
+        "warning":  f"background: {Theme.EXPIRY_BG_WARNING}; border: 1px solid {Theme.EXPIRY_BORDER_WARNING};",
+        "safe":     f"background: {Theme.BG_INPUT}; border: 1px solid {Theme.BORDER_INPUT};",
     }
     _DAY_COLORS = {
-        "critical": "#f07070",
-        "warning":  "#e8a042",
-        "safe":     "#8899b4",
+        "critical": Theme.COLOR_DANGER,
+        "warning":  Theme.EXPIRY_TEXT_WARNING,
+        "safe":     Theme.TEXT_MUTED,
     }
     _BAR_IDS = {
         "critical": "progress_danger",
-        "warning":  "progress_warning",
-        "safe":     "",
+        "warning": "progress_warning",
+        "safe": "",
     }
     _BADGE_VARIANTS = {
-        "critical": ("Hết hạn",    "exp"),
-        "warning":  ("Sắp hết",    "warn"),
-        "safe":     ("Theo dõi",   "normal"),
+        "critical": ("Hết hạn", "exp"),
+        "warning":  ("Sắp hết", "warn"),
+        "safe":     ("Theo dõi", "normal"),
     }
 
     def __init__(
@@ -59,10 +60,13 @@ class ExpiryItem(QFrame):
         # Left — names
         left = QVBoxLayout()
         left.setSpacing(2)
+        
         name_lbl = QLabel(name)
-        name_lbl.setStyleSheet("color:#e2e8f0; font-size:12px; font-weight:500;")
+        name_lbl.setStyleSheet(f"background: transparent; border: none; color: {Theme.TEXT_MAIN}; font-size: 12px; font-weight: 500;")
+        
         batch_lbl = QLabel(batch)
-        batch_lbl.setStyleSheet("color:#4a5a78; font-size:10px;")
+        batch_lbl.setStyleSheet(f"background: transparent; border: none; color: {Theme.TEXT_SUB}; font-size: 10px;")
+        
         left.addWidget(name_lbl)
         left.addWidget(batch_lbl)
         row.addLayout(left, 1)
@@ -80,10 +84,10 @@ class ExpiryItem(QFrame):
         row.addWidget(bar, 0, Qt.AlignmentFlag.AlignVCenter)
 
         # Days label
-        color = self._DAY_COLORS.get(severity, "#8899b4")
+        color = self._DAY_COLORS.get(severity, Theme.TEXT_MUTED)
         day_text = f"−{abs(days)} ngày" if days < 0 else f"{days} ngày"
         days_lbl = QLabel(day_text)
-        days_lbl.setStyleSheet(f"color:{color}; font-size:12px; font-weight:500;")
+        days_lbl.setStyleSheet(f"background: transparent; border: 1px solid {Theme.BORDER_NEUTRAL}; color: {color}; font-size: 12px; font-weight: 500;")
         days_lbl.setFixedWidth(62)
         days_lbl.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
         row.addWidget(days_lbl)

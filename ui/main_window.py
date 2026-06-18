@@ -1,6 +1,7 @@
 import os
 from PyQt6.QtWidgets import QMainWindow, QWidget, QHBoxLayout, QStackedWidget
 from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QIcon
 
 from ui.components.sidebar import Sidebar
 from ui.screens.warehouse_manager import WarehouseManagerScreen
@@ -14,8 +15,13 @@ class MainWindow(QMainWindow):
     def __init__(self, api_client=None, parent=None):
         super().__init__()
         self.api_client = api_client
-        self.setWindowTitle("WMS 2.0 — Warehouse Management System")
+
+        # 1: Cấu hình chung cho cửa sổ chính (Title, kích thước, layout cơ bản)
+        self.setWindowTitle("Warehouse Management System")
         self.resize(1100, 680)
+
+        # 2: Đặt icon cho ứng dụng
+        self.setWindowIcon(QIcon("ui/assets/Icon/boxes-stacked-solid-full.svg"))
 
         # Widget gốc nền ứng dụng
         main_widget = QWidget()
@@ -36,13 +42,13 @@ class MainWindow(QMainWindow):
 
         # 3. Đăng ký khởi tạo các màn hình chức năng
         self.screens = {
-            "dashboard": DashboardScreen(self),
+            "dashboard": DashboardScreen(self, api_client=self.api_client),
             "products":  ProductsScreen(self, api_client=self.api_client),
             "warehouse_manager": WarehouseManagerScreen(self, api_client=self.api_client), # Màn hình Quản lý kho
-            "stockin":   StockInScreen(self),
-            "stockout":  StockOutScreen(self),
-            "expiry":    ExpiryScreen(self),
-            "reports":   QWidget(self), # Khung chờ trang Báo cáo nếu cần làm thêm
+            "stockin":   StockInScreen(self, api_client=self.api_client),
+            "stockout":  StockOutScreen(self, api_client=self.api_client),
+            # "expiry":    ExpiryScreen(self, api_client=self.api_client),
+            # "reports":   QWidget(self), # Khung chờ trang Báo cáo nếu cần làm thêm
         }
 
         # Nạp tất cả màn hình vào StackedWidget

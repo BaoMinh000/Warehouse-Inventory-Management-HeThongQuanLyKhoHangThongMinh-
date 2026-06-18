@@ -37,7 +37,7 @@ class HistoryView(QWidget):
 
         # --- DATA TABLE ---
         # Tự đóng gói cấu trúc cột và bộ lọc cố định của lịch sử kho tại đây
-        columns = ["Sản phẩm (Barcode)", "Mã lô / Chứng từ", "Nghiệp vụ", "Số lượng thay đổi", "Thời gian hệ thống", "Trạng thái", "Thao tác"]
+        columns = ["Sản phẩm (Barcode)", "Mã lô / Chứng từ", "Nghiệp vụ", "Số lượng thay đổi", "Thời gian hệ thống", "Thao tác"]
         filters = ["Tất cả", "Nhập kho", "Xuất kho"]
         
         self.table = DataTable(columns, filters, self)

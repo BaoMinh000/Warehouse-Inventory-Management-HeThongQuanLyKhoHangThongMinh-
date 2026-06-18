@@ -1,27 +1,10 @@
-from PyQt6.QtWidgets import QFrame, QVBoxLayout, QLabel, QHBoxLayout
+from PyQt6.QtWidgets import QFrame, QVBoxLayout, QLabel
 from PyQt6.QtCore import Qt
 
-
 class StatCard(QFrame):
-    """
-    Metric summary card.
+    """ Thẻ hiển thị chỉ số thống kê tổng quan """
 
-    Parameters
-    ----------
-    label   : str  — muted label text (top)
-    value   : str  — large value (centre)
-    trend   : str  — small trend text (bottom, optional)
-    value_color : str — hex color for value text
-    """
-
-    def __init__(
-        self,
-        label: str,
-        value: str,
-        trend: str = "",
-        value_color: str = "#e2e8f0",
-        parent=None,
-    ):
+    def __init__(self, label: str, value: str, trend: str = "", value_color: str = "#e2e8f0", parent=None):
         super().__init__(parent)
         self.setObjectName("stat_card")
         self.setFixedHeight(88)
@@ -30,32 +13,32 @@ class StatCard(QFrame):
         layout.setContentsMargins(14, 12, 14, 12)
         layout.setSpacing(4)
 
-        lbl = QLabel(label)
-        lbl.setStyleSheet("color:#4a5a78; font-size:11px;")
+        # Tiêu đề thẻ
+        self.lbl_title = QLabel(label)
+        self.lbl_title.setStyleSheet("color:#4a5a78; font-size:11px; background: transparent; border: none;")
 
-        val = QLabel(value)
-        val.setStyleSheet(
-            f"color:{value_color}; font-size:20px; font-weight:500;"
-        )
+        # Giá trị số (Nổi bật)
+        self.val_lbl = QLabel(value)
+        self.val_lbl.setStyleSheet(f"color:{value_color}; font-size:20px; font-weight:500; background: transparent; border: none;")
 
-        layout.addWidget(lbl)
-        layout.addWidget(val)
+        layout.addWidget(self.lbl_title)
+        layout.addWidget(self.val_lbl)
 
-        if trend:
-            t = QLabel(trend)
-            t.setStyleSheet("color:#4a5a78; font-size:10px;")
-            layout.addWidget(t)
+        # Dòng thông tin phụ phía dưới
+        self.trend_lbl = QLabel(trend)
+        self.trend_lbl.setStyleSheet("color:#4a5a78; font-size:10px; background: transparent; border: none;")
+        layout.addWidget(self.trend_lbl)
+        
+        # Ẩn/Hiện tùy thuộc vào việc có text ban đầu hay không
+        self.trend_lbl.setVisible(bool(trend))
 
         layout.addStretch()
 
-    def update_value(self, value: str, trend: str = ""):
-        """Refresh displayed value and trend at runtime."""
-        for i in range(self.layout().count()):
-            item = self.layout().itemAt(i)
-            if item and item.widget():
-                w = item.widget()
-                if isinstance(w, QLabel) and w.styleSheet().startswith("color:#"):
-                    if "font-size:20px" in w.styleSheet():
-                        w.setText(value)
-                    elif trend and "font-size:10px" in w.styleSheet():
-                        w.setText(trend)
+    def update_value(self, value: str):
+        """Cập nhật giá trị số lớn ở giữa"""
+        self.val_lbl.setText(value)
+
+    def update_subtext(self, trend: str):
+        """Cập nhật dòng thông tin phụ phía dưới"""
+        self.trend_lbl.setText(trend)
+        self.trend_lbl.setVisible(bool(trend))

@@ -1,79 +1,112 @@
+import os
+import re
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QPushButton, QFrame
-from PyQt6.QtCore import Qt, pyqtSignal, QByteArray, QSize
-from PyQt6.QtGui import QIcon, QPixmap
-from ui.utils.image_utils import create_svg_icon
+from PyQt6.QtCore import Qt, pyqtSignal, QByteArray, QRectF
+from PyQt6.QtGui import QPainter, QColor, QFont
+from PyQt6.QtSvg import QSvgRenderer  # Dùng để render SVG vector trực tiếp cho nút bấm
 
-SVG_DASHBOARD = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><path fill="currentColor" d="M341.8 72.6C329.5 61.2 310.5 61.2 298.3 72.6L74.3 280.6C64.7 289.6 61.5 303.5 66.3 315.7C71.1 327.9 82.8 336 96 336L112 336L112 512C112 547.3 140.7 576 176 576L464 576C499.3 576 528 547.3 528 512L528 336L544 336C557.2 336 569 327.9 573.8 315.7C578.6 303.5 575.4 289.5 565.8 280.6L341.8 72.6zM304 384L336 384C362.5 384 384 405.5 384 432L384 528L256 528L256 432C256 405.5 277.5 384 304 384z"/></svg>"""
-SVG_BOX = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><!--!Font Awesome Free v7.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path d="M465.4 192L431.1 144L209 144L174.7 192L465.4 192zM96 212.5C96 199.2 100.2 186.2 107.9 175.3L156.9 106.8C168.9 90 188.3 80 208.9 80L431 80C451.7 80 471.1 90 483.1 106.8L532 175.3C539.8 186.2 543.9 199.2 543.9 212.5L544 480C544 515.3 515.3 544 480 544L160 544C124.7 544 96 515.3 96 480L96 212.5z"/></svg>"""
-SVG_ARROW_UP = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><!--!Font Awesome Free v7.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path d="M342.6 73.4C330.1 60.9 309.8 60.9 297.3 73.4L169.3 201.4C156.8 213.9 156.8 234.2 169.3 246.7C181.8 259.2 202.1 259.2 214.6 246.7L288 173.3L288 384C288 401.7 302.3 416 320 416C337.7 416 352 401.7 352 384L352 173.3L425.4 246.7C437.9 259.2 458.2 259.2 470.7 246.7C483.2 234.2 483.2 213.9 470.7 201.4L342.7 73.4zM160 416C160 398.3 145.7 384 128 384C110.3 384 96 398.3 96 416L96 480C96 533 139 576 192 576L448 576C501 576 544 533 544 480L544 416C544 398.3 529.7 384 512 384C494.3 384 480 398.3 480 416L480 480C480 497.7 465.7 512 448 512L192 512C174.3 512 160 497.7 160 480L160 416z"/></svg>"""
-SVG_ARROW_DOWN = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><!--!Font Awesome Free v7.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path d="M297.4 566.6C309.9 579.1 330.2 579.1 342.7 566.6L502.7 406.6C515.2 394.1 515.2 373.8 502.7 361.3C490.2 348.8 469.9 348.8 457.4 361.3L352 466.7L352 96C352 78.3 337.7 64 320 64C302.3 64 288 78.3 288 96L288 466.7L182.6 361.3C170.1 348.8 149.8 348.8 137.3 361.3C124.8 373.8 124.8 394.1 137.3 406.6L297.3 566.6z"/></svg>"""
-SVG_CLOCK = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><!--!Font Awesome Free v7.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path d="M320 64C461.4 64 576 178.6 576 320C576 461.4 461.4 576 320 576C178.6 576 64 461.4 64 320C64 178.6 178.6 64 320 64zM296 184L296 320C296 328 300 335.5 306.7 340L402.7 404C413.7 411.4 428.6 408.4 436 397.3C443.4 386.2 440.4 371.4 429.3 364L344 307.2L344 184C344 170.7 333.3 160 320 160C306.7 160 296 170.7 296 184z"/></svg>"""
-SVG_CHART = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><!--!Font Awesome Free v7.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path d="M96 96C113.7 96 128 110.3 128 128L128 464C128 472.8 135.2 480 144 480L544 480C561.7 480 576 494.3 576 512C576 529.7 561.7 544 544 544L144 544C99.8 544 64 508.2 64 464L64 128C64 110.3 78.3 96 96 96zM192 160C192 142.3 206.3 128 224 128L416 128C433.7 128 448 142.3 448 160C448 177.7 433.7 192 416 192L224 192C206.3 192 192 177.7 192 160zM224 240L352 240C369.7 240 384 254.3 384 272C384 289.7 369.7 304 352 304L224 304C206.3 304 192 289.7 192 272C192 254.3 206.3 240 224 240zM224 352L480 352C497.7 352 512 366.3 512 384C512 401.7 497.7 416 480 416L224 416C206.3 416 192 401.7 192 384C192 366.3 206.3 352 224 352z"/></svg>"""
-SVG_WAREHOUSE = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><!--!Font Awesome Free v7.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path d="M32 206.1L32 544C32 561.7 46.3 576 64 576C81.7 576 96 561.7 96 544L96 304C96 286.3 110.3 272 128 272L512 272C529.7 272 544 286.3 544 304L544 544C544 561.7 558.3 576 576 576C593.7 576 608 561.7 608 544L608 206.1C608 178.6 590.4 154.1 564.2 145.4L335.2 69.1C325.3 65.8 314.7 65.8 304.8 69.1L75.8 145.4C49.6 154.1 32 178.6 32 206.1zM496 320L144 320L144 384L496 384L496 320zM144 480L496 480L496 416L144 416L144 480zM496 512L144 512L144 576L496 576L496 512z"/></svg>"""
+from ui.utils.theme import Theme  # Khai báo sử dụng bảng màu tập trung hệ thống
+
+# Load SVG icons từ .env
+SVG_DASHBOARD = os.getenv("SVG_DASHBOARD", "")
+SVG_BOX = os.getenv("SVG_BOX", "")
+SVG_WAREHOUSE = os.getenv("SVG_WAREHOUSE", "")
+SVG_CLOCK = os.getenv("SVG_CLOCK", "")
+SVG_CHART = os.getenv("SVG_CHART", "")
 
 NAV_ITEMS = [
     ("dashboard", SVG_DASHBOARD,  "Dashboard",     False),
-    ("products",  SVG_BOX,  "Sản phẩm",      False),
+    ("products",  SVG_BOX,        "Sản phẩm",      False),
     ("warehouse_manager", SVG_WAREHOUSE, "Quản lý kho", False),
-    # ("stockin",   SVG_ARROW_UP,  "Nhập kho",      False),
-    # ("stockout",  SVG_ARROW_DOWN,  "Xuất kho",      False),
-    ("expiry",    SVG_CLOCK, "Hết hạn",       True),   # True = has alert badge
-    ("reports",   SVG_CHART, "Báo cáo",       False),
+    # ("expiry",    SVG_CLOCK,      "Hết hạn",       True),
+    # ("reports",   SVG_CHART,      "Báo cáo",       False),
 ]
 
-
 class _NavButton(QPushButton):
-    """Single icon nav button using inline SVG text."""
-
-    # Mẹo QSS: Để icon SVG tự đổi màu theo state, hãy dùng thuộc tính `qproperty-icon` trong stylesheet!
-    STYLE_NORMAL = (
-        "QPushButton { background:transparent; border:none; border-radius:8px;"
-        " qproperty-iconSize: 20px 20px; }"
-        "QPushButton:hover { background:#1e2740; }"
-    )
-    
-    # Bạn có thể dùng 2 bộ icon màu khác nhau hoặc dùng QIcon States. 
-    # Nhưng cách nhanh nhất với stylesheet là quản lý đổi màu icon qua QIcon.
-    STYLE_ACTIVE = (
-        "QPushButton { background:#1a2e4a; border:none; border-radius:8px;"
-        " qproperty-iconSize: 20px 20px; }"
-    )
+    """Nút bấm Sidebar tự vẽ Icon SVG bằng QSvgRenderer để đổi màu động"""
 
     def __init__(self, svg_str: str, tooltip: str, has_badge: bool = False, parent=None):
         super().__init__(parent)
         self.setFixedSize(36, 36)
         self.setToolTip(tooltip)
+        self.setCursor(Qt.CursorShape.PointingHandCursor)  # Hiệu ứng bàn tay khi hover
         
-        # Chuyển đổi chuỗi SVG sang QIcon
-        icon = create_svg_icon(svg_str)
-        self.setIcon(icon)
-        self.setIconSize(QSize(20, 20)) # Kích thước icon bên trong nút 36x36
-        
-        self.setStyleSheet(self.STYLE_NORMAL)
+        self.raw_svg = svg_str
         self._active = False
+        self._hovered = False
 
     def set_active(self, active: bool):
         self._active = active
-        self.setStyleSheet(self.STYLE_ACTIVE if active else self.STYLE_NORMAL)
+        self.update()  # Yêu cầu nút vẽ lại giao diện khi đổi trạng thái
+
+    def enterEvent(self, event):
+        self._hovered = True
+        self.update()
+        super().enterEvent(event)
+
+    def leaveEvent(self, event):
+        self._hovered = False
+        self.update()
+        super().leaveEvent(event)
+
+    def _get_current_color(self) -> str:
+        """Trả về mã màu Hex từ Theme dựa trên trạng thái hiện tại của nút"""
+        if self._active:
+            return Theme.COLOR_PRIMARY
+        if self._hovered:
+            return Theme.TEXT_WHITE_HOVER
+        return Theme.TEXT_SUB
+
+    def _render_svg(self, svg_str: str, color_hex: str) -> QSvgRenderer | None:
+        if not svg_str.strip():
+            return None
+        if "fill=" not in svg_str:
+            svg_str = svg_str.replace('<svg', f'<svg fill="{color_hex}"')
+        else:
+            svg_str = re.sub(r'fill="[^"]+"', f'fill="{color_hex}"', svg_str)
         
+        byte_array = QByteArray(svg_str.strip().encode('utf-8'))
+        renderer = QSvgRenderer(byte_array)
+        return renderer if renderer.isValid() else None
+
+    def paintEvent(self, event):
+        """Hàm tự vẽ toàn bộ nút bấm kết nối với dữ liệu Theme màu chung"""
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+
+        w, h = self.width(), self.height()
+        current_color = self._get_current_color()
+
+        # Thay thế BG_NAV_ACTIVE bằng BG_BTN_ACTIVE, BG_NAV_HOVER bằng BG_BTN_HOVER
+        if self._active:
+            painter.setBrush(QColor(Theme.BG_BTN_ACTIVE)) # Dùng chung với nút active hệ thống
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.drawRoundedRect(0, 0, w, h, 8, 8)
+        elif self._hovered:
+            painter.setBrush(QColor(Theme.BG_BTN_HOVER))  # Dùng chung với nút hover hệ thống
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.drawRoundedRect(0, 0, w, h, 8, 8)
+
+        # 2. Vẽ Icon SVG trực tiếp bằng Renderer
+        renderer = self._render_svg(self.raw_svg, current_color)
+        if renderer:
+            icon_size = 20
+            icon_rect = QRectF((w - icon_size) / 2, (h - icon_size) / 2, icon_size, icon_size)
+            renderer.render(painter, icon_rect)
+
+        painter.end()
+
 
 class Sidebar(QWidget):
-    """
-    Vertical icon sidebar.
-
-    Signals
-    -------
-    navigate(str)  : emitted with screen key when a nav button is clicked
-    """
-
+    """Thanh Sidebar quản lý các nút bấm vector đồng bộ cấu trúc màu từ Theme"""
     navigate = pyqtSignal(str)
 
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setFixedWidth(52)
+        # Đồng bộ màu nền Sidebar và màu viền phân tách sang Theme chung
         self.setStyleSheet(
-            "QWidget { background:#161b26;"
-            " border-right:1px solid #2a3347; }"
+            f"QWidget {{ background: {Theme.BG_SIDEBAR}; border-right: 1px solid {Theme.BORDER_SIDEBAR}; }}"
         )
 
         layout = QVBoxLayout(self)
@@ -83,16 +116,11 @@ class Sidebar(QWidget):
 
         self._buttons: dict[str, _NavButton] = {}
 
-        primary_keys  = ["dashboard", "products", "warehouse_manager"]
-        secondary_keys = ["expiry", "reports"]
-
         for key, icon, tip, badge in NAV_ITEMS:
             if key == "expiry":
                 divider = QFrame()
                 divider.setFixedHeight(1)
-                divider.setStyleSheet(
-                    "background:#2a3347; border:none; margin:4px 0;"
-                )
+                divider.setStyleSheet(f"background: {Theme.BORDER_SIDEBAR}; border: none; margin: 4px 0;")
                 layout.addWidget(divider)
 
             btn = _NavButton(icon, tip, badge)
@@ -100,37 +128,24 @@ class Sidebar(QWidget):
             self._buttons[key] = btn
             layout.addWidget(btn)
 
-        # Settings pinned at bottom
         layout.addStretch()
+        
+        # Phần nút cài đặt vạch phân tách thứ 2
         divider2 = QFrame()
         divider2.setFixedHeight(1)
-        divider2.setStyleSheet("background:#2a3347; border:none; margin:4px 0;")
+        divider2.setStyleSheet(f"background: {Theme.BORDER_SIDEBAR}; border: none; margin: 4px 0;")
         layout.addWidget(divider2)
 
-        settings_btn = QPushButton("⚙")
-        settings_btn.setFixedSize(36, 36)
-        settings_btn.setToolTip("Cài đặt")
-        settings_btn.setStyleSheet(_NavButton.STYLE_NORMAL)
-        layout.addWidget(settings_btn)
+        self.settings_btn = _NavButton("", "Cài đặt") 
+        layout.addWidget(self.settings_btn)
 
-        # Activate dashboard by default
         self._active_key = "dashboard"
         self._buttons["dashboard"].set_active(True)
 
     def _on_click(self, key: str):
         if key in self._buttons:
-            self._buttons.get(self._active_key, None) and \
+            if self._active_key in self._buttons:
                 self._buttons[self._active_key].set_active(False)
             self._active_key = key
             self._buttons[key].set_active(True)
         self.navigate.emit(key)
-
-    def set_active(self, key: str):
-        """Programmatically activate a nav item without emitting signal."""
-        if self._active_key in self._buttons:
-            self._buttons[self._active_key].set_active(False)
-        self._active_key = key
-        if key in self._buttons:
-            self._buttons[key].set_active(True)
-
-    

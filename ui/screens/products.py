@@ -1,56 +1,58 @@
-# ui/screens/products_screen.py
-# File Frontend UI, định nghĩa màn hình quản lý danh mục sản phẩm, có nhiệm vụ gọi API Client để lấy dữ liệu từ Server Backend và hiển thị lên bảng, cũng như gửi yêu cầu tạo mới sản phẩm xuống Server khi người dùng nhập liệu và bấm nút lưu
+import os
 from PyQt6.QtWidgets import (
-    QMessageBox, QTableWidgetItem, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, 
+    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, 
     QLineEdit, QComboBox, QFrame, QStackedWidget, QTextEdit
 )
-from PyQt6.QtCore import Qt, QSize
+from PyQt6.QtCore import Qt
 from ui.components.data_table import DataTable
+from ui.utils.theme import Theme 
+# Import lớp điều phối nghiệp vụ vừa tách
+from ui.controllers.products_controller import ProductsController
+
 
 class ProductsScreen(QWidget):
     def __init__(self, parent=None, api_client=None):
         super().__init__(parent)
-        self.api_client = api_client
-        self.products_catalog = []  # Khởi tạo mảng rỗng ban đầu
+        
+        # Khởi tạo Controller điều phối hành vi
+        self.controller = ProductsController(self, api_client)
 
-        # Quản lý trạng thái chuyển đổi màn hình
+        # Quản lý trạng thái chuyển đổi màn hình dạng Stack
         self.stack = QStackedWidget(self)
         main_layout = QVBoxLayout(self)
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.addWidget(self.stack)
         
-        # Khởi tạo 2 view giao diện
+        # Khởi tạo 2 View con
         self.init_list_view()
         self.init_add_form_view()
         
-        # Thêm vào stack (Mặc định hiển thị danh sách trước)
         self.stack.addWidget(self.list_widget)
         self.stack.addWidget(self.add_widget)
-        self.stack.setCurrentWidget(self.list_widget)
+        self.switch_to_list_view()
 
-        # Tiến hành nạp dữ liệu từ API lên bảng lần đầu tiên
-        self.load_products_from_api()
+        # Ủy quyền cho controller nạp dữ liệu lần đầu
+        self.controller.handle_load_products()
 
-    def load_products_from_api(self):
-        """Hàm UI: Gọi API Client để lấy danh mục sản phẩm từ Server Backend và cập nhật lên bảng hiển thị"""
-        try:
-            # Gọi hàm thông qua lớp logic api_client để lấy danh mục từ Backend Server
-            self.products_catalog = self.api_client.get_catalog()
-            
-            # Đổ dữ liệu mới nhất vừa quét từ Server vào bảng hiển thị
-            self.table.load_data(self.products_catalog, status=True, action=True)
-            print(f"[UI] Đã tải và làm mới thành công {len(self.products_catalog)} sản phẩm trên bảng.")
-            print(f"[UI] Dữ liệu sản phẩm mẫu: {self.products_catalog[:2]}")  # In ra 2 sản phẩm đầu tiên để kiểm tra định dạng dữ liệu
-            return self.products_catalog
-        except ConnectionError as e:
-            QMessageBox.critical(self, "Lỗi kết nối", str(e))
-            return []
-        except Exception as e:
-            QMessageBox.critical(self, "Lỗi không xác định", f"Đã có lỗi xảy ra: {str(e)}")
-            return []
+    def switch_to_list_view(self):
+        """Chuyển đổi giao diện về màn hình danh sách chính."""
+        if hasattr(self, 'stack') and hasattr(self, 'list_widget'):
+            self.stack.setCurrentWidget(self.list_widget)
+
+    def switch_to_add_view(self):
+        """Chuyển đổi giao diện sang Form thêm sản phẩm."""
+        if hasattr(self, 'stack') and hasattr(self, 'add_widget'):
+            self.stack.setCurrentWidget(self.add_widget)
+
+    def clear_form_inputs(self):
+        """Dọn dẹp sạch dữ liệu cũ trong các ô Form nhập liệu."""
+        self.input_barcode.clear()
+        self.input_name.clear()
+        self.input_desc.clear()
+        self.input_loc.clear()
 
     def init_list_view(self):
-        """Màn hình con 1: Bảng danh sách sản phẩm (Mặc định gốc)"""
+        """Màn hình con 1: Bảng danh sách sản phẩm"""
         self.list_widget = QWidget()
         layout = QVBoxLayout(self.list_widget)
         layout.setContentsMargins(16, 16, 16, 16)
@@ -63,30 +65,32 @@ class ProductsScreen(QWidget):
         title_row.setSpacing(8)
 
         title = QLabel("Danh mục sản phẩm")
-        title.setStyleSheet("font-size: 16px; font-weight: bold; color: #e2e8f0;")
+        title.setStyleSheet(f"background: transparent; font-size: 16px; font-weight: bold; color: {Theme.TEXT_MAIN};")
 
         self.btn_refresh = QPushButton("↻")
         self.btn_refresh.setFixedSize(28, 28)
         self.btn_refresh.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.btn_refresh.clicked.connect(self.load_products_from_api)
+        
+        # SỰ KIỆN: Ủy quyền thẳng cho hàm handle_load_products của controller
+        self.btn_refresh.clicked.connect(self.controller.handle_load_products)
 
-        self.btn_refresh.setStyleSheet("""
-            QPushButton {
+        self.btn_refresh.setStyleSheet(f"""
+            QPushButton {{
                 background: transparent;
-                border: 1px solid #2a3347;
+                border: 1px solid {Theme.BORDER_SIDEBAR};
                 border-radius: 14px;
-                color: #8899b4;
+                color: {Theme.TEXT_MUTED};
                 font-size: 14px;
                 font-weight: bold;
-            }
-            QPushButton:hover {
-                background: #1a2233;
-                border-color: #378ADD;
-                color: #378ADD;
-            }
-            QPushButton:pressed {
-                background: #111827;
-            }
+            }}
+            QPushButton:hover {{
+                background: {Theme.BG_NAV_HOVER if hasattr(Theme, 'BG_NAV_HOVER') else Theme.BG_BTN_HOVER};
+                border-color: {Theme.COLOR_PRIMARY};
+                color: {Theme.COLOR_PRIMARY};
+            }}
+            QPushButton:pressed {{
+                background: {Theme.BG_PANEL_DARK};
+            }}
         """)
 
         title_row.addWidget(title)
@@ -94,7 +98,7 @@ class ProductsScreen(QWidget):
         title_row.addStretch()
 
         subtitle = QLabel("Quản lý danh sách mã hàng, vị trí và định mức tồn kho")
-        subtitle.setStyleSheet("font-size: 11px; color: #8899b4;")
+        subtitle.setStyleSheet(f"background: transparent; font-size: 11px; color: {Theme.TEXT_MUTED};")
 
         title_lay.addLayout(title_row)
         title_lay.addWidget(subtitle)
@@ -102,16 +106,15 @@ class ProductsScreen(QWidget):
         add_btn = QPushButton("+ Thêm sản phẩm")
         add_btn.setObjectName("action_btn")
         add_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        add_btn.setStyleSheet("""
-            QPushButton#action_btn {
-                background-color: transparent; color: white; 
-                border: 1px solid #4c4e4f; border-radius:6px;
+        add_btn.setStyleSheet(f"""
+            QPushButton#action_btn {{
+                background-color: transparent; color: {Theme.TEXT_MAIN}; 
+                border: 1px solid {Theme.BORDER_NEUTRAL}; border-radius:6px;
                 padding:6px 12px; font-size: 14px; font-weight: bold;
-            }
-            QPushButton#action_btn:hover { background-color: rgba(76, 78, 79, 0.8); }
+            }}
+            QPushButton#action_btn:hover {{ background-color: {Theme.BG_BTN_HOVER}; }}
         """)
-        # Kích hoạt lật trang khi bấm nút thêm
-        add_btn.clicked.connect(lambda: self.stack.setCurrentWidget(self.add_widget))
+        add_btn.clicked.connect(self.switch_to_add_view)
         
         header.addLayout(title_lay)
         header.addStretch()
@@ -119,18 +122,19 @@ class ProductsScreen(QWidget):
         layout.addLayout(header)
 
         # Cấu hình DataTable
-        columns = ["Sản phẩm", "Barcode", "Danh mục",  "Loại", "Trạng thái", "Thao tác"] #"Tồn kho", 
+        columns = ["Sản phẩm", "Barcode", "Danh mục",  "Loại", "Thao tác"]
         filters = ["Tất cả", "Thực phẩm", "Hóa mỹ phẩm", "Đồ uống", "Vật tư"]
         
-        self.table = DataTable(columns, filters, self)
+        # Truyền đối tượng cha để DataTable có thể callback
+        self.table = DataTable(columns, filters, self) 
         layout.addWidget(self.table)
         
-        self.setStyleSheet("""
-            QTableWidget { background: transparent; gridline-color: #2a3347; }
-            QHeaderView::section {
-                background: transparent; color: #4a5a78;
+        self.setStyleSheet(f"""
+            QTableWidget {{ background: transparent; gridline-color: {Theme.BORDER_SIDEBAR}; }}
+            QHeaderView::section {{
+                background: transparent; color: {Theme.TEXT_SUB};
                 font-size: 12px; font-weight: bold; border: none; padding: 4px;
-            }
+            }}
         """)
 
     def init_add_form_view(self):
@@ -140,35 +144,38 @@ class ProductsScreen(QWidget):
         layout.setContentsMargins(16, 16, 16, 16)
         layout.setSpacing(16)
 
-        # Stylesheet đồng bộ Theme Tối cho form nhập liệu
-        self.add_widget.setStyleSheet("""
-            QLabel { color: #8899b4; font-size: 12px; }
-            QLineEdit, QComboBox, QTextEdit {
-                background: #161b26; border: 1px solid #2a3347; border-radius: 6px;
-                color: #e2e8f0; padding: 8px 12px; font-size: 13px;
-            }
-            QLineEdit:focus, QComboBox:focus, QTextEdit:focus { border-color: #378ADD; }
-            QComboBox::drop-down { border: none; padding-right: 10px; }
+        self.add_widget.setStyleSheet(f"""
+            QLabel {{ color: {Theme.TEXT_MUTED}; font-size: 12px; background: transparent; }}
+            QLineEdit, QComboBox, QTextEdit {{
+                background: {Theme.BG_INPUT}; border: 1px solid {Theme.BORDER_INPUT}; border-radius: 6px;
+                color: {Theme.TEXT_MAIN}; padding: 8px 12px; font-size: 13px;
+            }}
+            QLineEdit:focus, QComboBox:focus, QTextEdit:focus {{ border-color: {Theme.COLOR_PRIMARY}; }}
+            QComboBox::drop-down {{ border: none; padding-right: 10px; }}
         """)
 
         # --- HEADER BAR ---
         header = QHBoxLayout()
         title_lay = QVBoxLayout()
         title = QLabel("Thêm sản phẩm mới")
-        title.setStyleSheet("font-size: 18px; font-weight: bold; color: #e2e8f0;")
+        title.setStyleSheet(f"background: transparent; font-size: 18px; font-weight: bold; color: {Theme.TEXT_MAIN};")
         subtitle = QLabel("Khai báo mã hàng, định mức lưu kho và chiến lược phân phối")
-        subtitle.setStyleSheet("font-size: 11px; color: #8899b4;")
+        subtitle.setStyleSheet(f"background: transparent; font-size: 11px; color: {Theme.TEXT_MUTED};")
         title_lay.addWidget(title)
         title_lay.addWidget(subtitle)
         
         back_btn = QPushButton("← Quay lại danh sách")
         back_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        back_btn.setStyleSheet("""
-            QPushButton { background: #1a2e4a; border: 1px solid #2a4a6e; color: #5b9cf6; 
-                          padding: 8px 14px; border-radius: 6px; font-weight: bold; }
-            QPushButton:hover { background: #24426b; }
+        back_btn.setStyleSheet(f"""
+            QPushButton {{ 
+                background: {Theme.BG_NAV_ACTIVE if hasattr(Theme, 'BG_NAV_ACTIVE') else Theme.BG_BTN_ACTIVE}; 
+                border: 1px solid {Theme.BORDER_ACTIVE}; 
+                color: {Theme.TEXT_BLUE_ACCENT}; 
+                padding: 8px 14px; border-radius: 6px; font-weight: bold; 
+            }}
+            QPushButton:hover {{ background: {Theme.BORDER_HOVER}; }}
         """)
-        back_btn.clicked.connect(lambda: self.stack.setCurrentWidget(self.list_widget))
+        back_btn.clicked.connect(self.switch_to_list_view)
         
         header.addLayout(title_lay)
         header.addStretch()
@@ -181,13 +188,13 @@ class ProductsScreen(QWidget):
 
         # CỘT TRÁI: THÔNG TIN CƠ BẢN CỦA SẢN PHẨM
         left_box = QFrame()
-        left_box.setStyleSheet("QFrame { background: #0f131a; border: 1px solid #1e2530; border-radius: 8px; }")
+        left_box.setStyleSheet(f"QFrame {{ background: {Theme.BG_PANEL_DARK}; border: 1px solid {Theme.BORDER_PANEL_DARK}; border-radius: 8px; }}")
         left_layout = QVBoxLayout(left_box)
         left_layout.setContentsMargins(16, 16, 16, 16)
         left_layout.setSpacing(12)
 
         lbl_left_title = QLabel("📝 Thông tin cơ bản")
-        lbl_left_title.setStyleSheet("color: #5b9cf6; font-weight: bold; font-size: 13px; border: none;")
+        lbl_left_title.setStyleSheet(f"color: {Theme.TEXT_BLUE_ACCENT}; font-weight: bold; font-size: 13px; border: none; background: transparent;")
         left_layout.addWidget(lbl_left_title)
 
         left_layout.addWidget(QLabel("Tên sản phẩm"))
@@ -200,7 +207,6 @@ class ProductsScreen(QWidget):
         self.input_barcode.setPlaceholderText("Nhập hoặc quét mã barcode sản phẩm...")
         left_layout.addWidget(self.input_barcode)
 
-        # Layout hàng ngang cho Danh mục & Đơn vị tính
         row_cate = QHBoxLayout()
         col_cat = QVBoxLayout()
         col_cat.addWidget(QLabel("Danh mục"))
@@ -228,13 +234,13 @@ class ProductsScreen(QWidget):
 
         # CỘT PHẢI: THIẾT LẬP QUẢN TRỊ KHO
         right_box = QFrame()
-        right_box.setStyleSheet("QFrame { background: #0f131a; border: 1px solid #1e2530; border-radius: 8px; }")
+        right_box.setStyleSheet(f"QFrame {{ background: {Theme.BG_PANEL_DARK}; border: 1px solid {Theme.BORDER_PANEL_DARK}; border-radius: 8px; }}")
         right_layout = QVBoxLayout(right_box)
         right_layout.setContentsMargins(16, 16, 16, 16)
         right_layout.setSpacing(12)
 
         lbl_right_title = QLabel("⚙ Cấu hình quản trị kho")
-        lbl_right_title.setStyleSheet("color: #e2e8f0; font-weight: bold; font-size: 13px; border: none;")
+        lbl_right_title.setStyleSheet(f"color: {Theme.TEXT_MAIN}; font-weight: bold; font-size: 13px; border: none; background: transparent;")
         right_layout.addWidget(lbl_right_title)
 
         right_layout.addWidget(QLabel("Chiến lược luân chuyển hàng hóa"))
@@ -242,7 +248,6 @@ class ProductsScreen(QWidget):
         self.cbo_strategy.addItems(["FIFO — Ưu tiên xuất hàng nhập trước", "LIFO — Ưu tiên xuất hàng nhập sau"])
         right_layout.addWidget(self.cbo_strategy)
 
-        # Hàng ngang cấu hình định mức cảnh báo tồn kho
         row_limit = QHBoxLayout()
         col_min = QVBoxLayout(); col_min.addWidget(QLabel("Định mức tối thiểu (Min)")); self.input_min = QLineEdit("10"); col_min.addWidget(self.input_min); row_limit.addLayout(col_min, 1)
         col_max = QVBoxLayout(); col_max.addWidget(QLabel("Định mức tối đa (Max)")); self.input_max = QLineEdit("5000"); col_max.addWidget(self.input_max); row_limit.addLayout(col_max, 1)
@@ -254,73 +259,38 @@ class ProductsScreen(QWidget):
         right_layout.addWidget(self.input_loc)
 
         note_panel = QFrame()
-        note_panel.setStyleSheet("QFrame { background: #11151f; border-radius: 6px; border: none; }")
+        note_panel.setStyleSheet(f"QFrame {{ background: {Theme.BG_PANEL_SUMMARY}; border-radius: 6px; border: none; }}")
         np_lay = QVBoxLayout(note_panel)
         np_lay.setContentsMargins(12, 10, 12, 10)
         np_lay.setSpacing(4)
         
         lbl_np_t = QLabel("📌 Lưu ý hệ thống")
-        lbl_np_t.setStyleSheet("color: #5b9cf6; font-weight: bold; border: none;")
+        lbl_np_t.setStyleSheet(f"color: {Theme.TEXT_BLUE_ACCENT}; font-weight: bold; border: none; background: transparent;")
         lbl_np_c = QLabel("Mã sản phẩm tự động sinh nếu để trống.\nChiến lược FIFO được áp dụng mặc định cho thực phẩm.")
-        lbl_np_c.setStyleSheet("color: #6c7a9c; font-size: 11px; border: none; line-height: 14px;")
+        lbl_np_c.setStyleSheet(f"color: {Theme.TEXT_LABEL_SUMMARY}; font-size: 11px; border: none; line-height: 14px; background: transparent;")
         np_lay.addWidget(lbl_np_t)
         np_lay.addWidget(lbl_np_c)
         right_layout.addWidget(note_panel)
 
         btn_save = QPushButton("Lưu sản phẩm mới")
         btn_save.setCursor(Qt.CursorShape.PointingHandCursor)
-        btn_save.setStyleSheet("""
-            QPushButton { background: #1dd1a1; border: none; color: #0f131a; 
-                          padding: 10px; border-radius: 6px; font-weight: bold; font-size: 13px; }
-            QPushButton:hover { background: #10ac84; }
+        btn_save.setStyleSheet(f"""
+            QPushButton {{ 
+                background: {Theme.BTN_MINT_SUCCESS}; 
+                border: none; 
+                color: {Theme.BG_PANEL_DARK}; 
+                padding: 10px; 
+                border-radius: 6px; 
+                font-weight: bold; 
+                font-size: 13px; 
+            }}
+            QPushButton:hover {{ background: {Theme.BTN_MINT_HOVER}; }}
         """)
-        btn_save.clicked.connect(self._on_save_clicked)
+        
+        # SỰ KIỆN: Ủy quyền lưu sản phẩm cho Controller điều phối
+        btn_save.clicked.connect(self.controller.handle_save_product)
 
         right_layout.addWidget(btn_save)
         right_layout.addStretch()
         body_layout.addWidget(right_box, 1)
         layout.addLayout(body_layout)
-    
-    def _on_save_clicked(self):
-        """Hàm thu thập dữ liệu từ các ô Input và gửi yêu cầu tạo sản phẩm mới"""
-        barcode = self.input_barcode.text().strip()
-        name = self.input_name.text().strip()
-        category = self.cbo_category.currentText()
-        
-        strategy_raw = self.cbo_strategy.currentText()
-        strategy = "FIFO" if "FIFO" in strategy_raw else "LIFO"
-
-        if not barcode or not name:
-            QMessageBox.warning(
-                self, "Dữ liệu không hợp lệ", "Vui lòng điền đầy đủ thông tin Tên sản phẩm và Mã vạch!"
-            )
-            return
-
-        try:
-            # 1. Gửi lệnh tạo sản phẩm xuống Server Backend thông qua API Client
-            success = self.api_client.create_product(barcode, name, strategy, category)
-            
-            if success:
-                QMessageBox.information(
-                    self, "Thành công", f"Đã lưu sản phẩm '{name}' vào danh mục kho thành công."
-                )
-                
-                # 2. Gọi hàm đồng bộ tải lại dữ liệu từ Server tới UI để làm mới bảng hiển thị
-                self.load_products_from_api()
-                
-                # Làm sạch form nhập liệu
-                self.input_barcode.clear()
-                self.input_name.clear()
-                self.input_desc.clear()
-                self.input_loc.clear()
-                
-                # Lật trang quay về màn hình danh sách chính
-                if hasattr(self, 'stack') and hasattr(self, 'list_widget'):
-                    self.stack.setCurrentWidget(self.list_widget)
-                    
-        except ValueError as e:
-            QMessageBox.critical(self, "Lỗi Nghiệp Vụ", str(e))
-        except ConnectionError as e:
-            QMessageBox.critical(self, "Lỗi Kết Nối", str(e))
-        except Exception as e:
-            QMessageBox.critical(self, "Lỗi Hệ Thống", f"Đã xảy ra sự cố: {str(e)}")
