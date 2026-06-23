@@ -75,12 +75,6 @@ class ActivityFeed(QWidget):
 
     def _default_items(self):
         return [
-            ("in",   "Nhập lô — Sữa TH True Milk 1L",
-             "09:42 — Lô #B2406-01 · 240 thùng", "+240"),
-            ("out",  "Xuất kho — Mì Hảo Hảo tôm chua cay",
-             "08:15 — Đơn #ORD-7821 · FIFO tự động", "−120"),
-            ("warn", "Cảnh báo hết hạn — Nước Lavie 500ml",
-             "Hệ thống · Còn 7 ngày · Lô #B2405-12", "7 ngày"),
         ]
 
     def load_items(self, items: list[tuple[str, str, str, str]]):

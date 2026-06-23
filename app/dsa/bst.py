@@ -10,7 +10,7 @@ class Batch: # Lô hàng
         self.quantity = quantity
         self.expiry_date = expiry_date
         self.import_date = import_date
-        
+     
 class ProductNode: 
     """Đại diện cho một Node sản phẩm trên cây tìm kiếm nhị phân (BST)"""
     def __init__(self, barcode: str, product_name: str, strategy_type: str, category: str = "Thực phẩm"):
@@ -124,4 +124,33 @@ class BinarySearchTree:
         while current.left is not None:
             current = current.left
         return current
+    
+    def get_product_batches(self, barcode: str) -> Optional[List[Batch]]:
+        """Lấy danh sách các lô hàng của sản phẩm theo mã vạch"""
+        product_node = self.search(barcode)
+        if product_node is None:
+            return None
+        
+        # Trích xuất danh sách lô hàng từ cấu trúc lưu trữ (Queue hoặc Stack)
+        batches = []
+        if isinstance(product_node.stock_collection, Queue):
+            temp_queue = Queue()
+            while not product_node.stock_collection.is_empty():
+                batch = product_node.stock_collection.dequeue()
+                batches.append(batch)
+                temp_queue.enqueue(batch)
+            # Khôi phục lại trạng thái ban đầu của Queue
+            while not temp_queue.is_empty():
+                product_node.stock_collection.enqueue(temp_queue.dequeue())
+        elif isinstance(product_node.stock_collection, Stack):
+            temp_stack = Stack()
+            while not product_node.stock_collection.is_empty():
+                batch = product_node.stock_collection.pop()
+                batches.append(batch)
+                temp_stack.push(batch)
+            # Khôi phục lại trạng thái ban đầu của Stack
+            while not temp_stack.is_empty():
+                product_node.stock_collection.push(temp_stack.pop())
+        
+        return batches
     

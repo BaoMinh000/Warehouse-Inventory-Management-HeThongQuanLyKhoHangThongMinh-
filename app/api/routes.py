@@ -143,8 +143,8 @@ def get_catalog(db: Session = Depends(get_db)):
     result = []
     for prod in sorted_products:
         result.append({
-            "barcode": prod[0],
             "product_name": prod[1],
+            "barcode": prod[0],
             "category": prod[2],
             "strategy_type": prod[3]
         })
@@ -166,6 +166,7 @@ def search_product(barcode: str, db: Session = Depends(get_db)):
         "category": product_node.category,
         "strategy_type": product_node.strategy_type
     }
+    
 @router.get("/history")
 def history_view(db: Session = Depends(get_db)):
     """API 6: Lấy toàn bộ lịch sử biến động kho (Dữ liệu mẫu tĩnh cho UI)"""

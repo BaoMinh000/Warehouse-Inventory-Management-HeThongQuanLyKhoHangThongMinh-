@@ -15,8 +15,8 @@ class ProductModel(Base):
     __tablename__ = 'products'
 
     # barcode đóng vai trò là Khóa chính dưới DB và là Key điều hướng trên cây BST
-    barcode = Column(String(50), primary_key=True)
     product_name = Column(String(255), nullable=False)
+    barcode = Column(String(50), primary_key=True)
     
     #Trường danh mục sản phẩm để đồng bộ với BST Node và API
     category = Column(String(100), nullable=False, default="Thực phẩm")

@@ -269,7 +269,7 @@ class DashboardScreen(QScrollArea):
                 return
                 
             raw_history_list = self.api_client.get_inventory_history()
-            print(f"[CHART LOG] Dữ liệu lịch sử thô nhận về: {raw_history_list[:2]} ...")
+            # print(f"[CHART LOG] Dữ liệu lịch sử thô nhận về: {raw_history_list[:2]} ...")
             
             if hasattr(self.api_client, 'get_catalog'):
                 self.products_catalog_cached = self.api_client.get_catalog()

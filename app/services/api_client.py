@@ -108,7 +108,7 @@ class InventoryAPIClient:
     def search_product(self, barcode: str) -> dict:
         """Gọi API GET để tìm kiếm thông tin chi tiết của một sản phẩm theo mã vạch. Trả về dict chứa thông tin sản phẩm nếu tìm thấy, hoặc dict rỗng nếu không tìm thấy."""
         url = f"{self.base_url}/product/{barcode}"
-        print(f"API Client đang gọi GET {url} để tìm kiếm sản phẩm với barcode: {barcode}")
+        # print(f"API Client đang gọi GET {url} để tìm kiếm sản phẩm với barcode: {barcode}")
         try:
             response = requests.get(url)
             if response.status_code == 200:

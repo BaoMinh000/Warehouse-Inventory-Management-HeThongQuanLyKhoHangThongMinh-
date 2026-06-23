@@ -22,6 +22,7 @@ class MainWindow(QMainWindow):
 
         # 2: Đặt icon cho ứng dụng
         self.setWindowIcon(QIcon("ui/assets/Icon/boxes-stacked-solid-full.svg"))
+        self
 
         # Widget gốc nền ứng dụng
         main_widget = QWidget()
