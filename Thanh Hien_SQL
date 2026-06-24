@@ -1,0 +1,64 @@
+
+-- Chuyển tới Database bạn muốn sử dụng (Thay 'TenDatabaseCuaBan' bằng tên thật)
+-- USE TenDatabaseCuaBan;
+-- GO
+-- ==============================================================
+-- 1. TẠO BẢNG PRODUCTS (SẢN PHẨM)
+-- ==============================================================
+CREATE TABLE products(
+    -- Dùng barcode làm Khóa chính (Primary Key)
+    barcode VARCHAR(50) NOT NULL,
+    
+    -- NVARCHAR dùng để lưu trữ tiếng Việt có dấu (UTF-8/UTF-16)
+    product_name NVARCHAR(255) NOT NULL, 
+    
+    -- Ràng buộc CHECK chỉ cho phép điền 'FIFO' hoặc 'LIFO'
+    strategy_type VARCHAR(10) NOT NULL CHECK (strategy_type IN ('FIFO', 'LIFO')),
+    
+    category NVARCHAR(100) DEFAULT N'Thực phẩm',
+    
+    CONSTRAINT PK_products PRIMARY KEY (barcode)
+);
+
+CREATE TABLE batches (
+    -- Dùng batch_id làm khóa chính
+    batch_id VARCHAR(50) NOT NULL,
+    
+    -- Cột barcode sẽ làm Khóa ngoại (Foreign Key)
+    barcode VARCHAR(50) NOT NULL,
+    
+    quantity INT NOT NULL DEFAULT 0,
+    
+    -- SQL Server 2014 hỗ trợ kiểu DATE chuẩn
+    expiry_date DATE NOT NULL,
+    import_date DATE NOT NULL,
+    
+    CONSTRAINT PK_batches PRIMARY KEY (batch_id),
+    
+    -- Ràng buộc Khóa ngoại trỏ về bảng products
+    CONSTRAINT FK_batches_products FOREIGN KEY (barcode) 
+        REFERENCES products(barcode)
+        -- ON DELETE CASCADE tương đương với cascade="all, delete-orphan" trong SQLAlchemy 
+        -- Khi xóa sản phẩm, tất cả lô hàng của nó sẽ tự động bị xóa
+        ON DELETE CASCADE 
+);
+
+INSERT INTO products (barcode, product_name, strategy_type, category)
+VALUES 
+    ('SP001', N'Sữa tươi không đường', 'FIFO', N'Thực phẩm'),
+    ('SP002', N'Tivi Samsung 55 inch', 'LIFO', N'Điện máy'),
+
+-- Thêm các lô hàng mẫu thuộc về sản phẩm trên
+INSERT INTO batches (batch_id, barcode, quantity, expiry_date, import_date)
+VALUES 
+    INSERT INTO products (barcode, product_name, strategy_type, category)
+VALUES 
+    ('SP001', N'Sữa tươi không đường', 'FIFO', N'Thực phẩm'),
+    ('SP002', N'Tivi Samsung 55 inch', 'LIFO', N'Điện máy');
+
+-- Thêm các lô hàng mẫu thuộc về sản phẩm trên
+INSERT INTO batches (batch_id, barcode, quantity, expiry_date, import_date)
+VALUES 
+    ('B001', 'SP001', 100, '2026-12-31', '2026-06-01'),
+    ('B002', 'SP001', 50, '2026-10-31', '2026-06-15'),
+    ('B003', 'SP002', 10, '2099-12-31', '2026-06-20');
