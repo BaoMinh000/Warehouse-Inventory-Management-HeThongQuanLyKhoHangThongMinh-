@@ -68,6 +68,7 @@ class InventoryAPIClient:
             "quantity": quantity,
             "expiry_date": expiry_date  # Gửi chuỗi ngày sang để Backend tự parse datetime
         }
+        print(f"[API Client] Gọi POST {url} với payload: {payload}")
         try:
             response = requests.post(url, json=payload)
             if response.status_code == 200:
@@ -138,3 +139,20 @@ class InventoryAPIClient:
             raise ConnectionError("Mất kết nối tới máy chủ Backend khi lấy lịch sử kho.")
         except Exception as e:
             raise ValueError(f"Lỗi hệ thống khi lấy lịch sử kho: {str(e)}")
+        
+    def  get_product_stock(self, barcode: str) -> dict:
+        """Gọi API GET để lấy thông tin tồn kho hiện tại của một sản phẩm theo mã vạch. Trả về dict chứa thông tin tồn kho nếu tìm thấy, hoặc dict rỗng nếu không tìm thấy."""
+        url = f"{self.base_url}/product-stock/{barcode}"
+        try:
+            response = requests.get(url)
+            if response.status_code == 200:
+                return response.json()
+            elif response.status_code == 404:
+                return {}  # Trả về dict rỗng nếu không tìm thấy sản phẩm
+            else:
+                error_msg = response.json().get("detail", "Lỗi không xác định khi lấy tồn kho sản phẩm.")
+                raise ValueError(error_msg)
+        except requests.exceptions.ConnectionError:
+            raise ConnectionError("Mất kết nối tới máy chủ Backend khi lấy tồn kho sản phẩm.")
+        except Exception as e:
+            raise ValueError(f"Lỗi hệ thống khi lấy tồn kho sản phẩm: {str(e)}")

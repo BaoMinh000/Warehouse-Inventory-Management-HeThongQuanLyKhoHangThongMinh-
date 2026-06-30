@@ -5,8 +5,9 @@ from app.dsa.stack import Stack
 
 class Batch: # Lô hàng
     """Đại diện cho một lô hàng cụ thể trong kho"""
-    def __init__(self, batch_id: str, quantity: int, expiry_date, import_date):
+    def __init__(self, batch_id: str, barcode: str, quantity: int, expiry_date, import_date):
         self.batch_id = batch_id
+        self.barcode = barcode
         self.quantity = quantity
         self.expiry_date = expiry_date
         self.import_date = import_date

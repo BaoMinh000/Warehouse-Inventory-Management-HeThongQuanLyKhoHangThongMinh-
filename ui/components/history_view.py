@@ -37,7 +37,7 @@ class HistoryView(QWidget):
 
         # --- DATA TABLE ---
         # Tự đóng gói cấu trúc cột và bộ lọc cố định của lịch sử kho tại đây
-        columns = ["Sản phẩm (Barcode)", "Mã lô / Chứng từ", "Nghiệp vụ", "Số lượng thay đổi", "Thời gian hệ thống", "Thao tác"]
+        columns = ["📦 Sản phẩm (Barcode)", "Mã lô / Chứng từ", "Nghiệp vụ", "Số lượng thay đổi", "Thời gian hệ thống", "Thao tác"]
         filters = ["Tất cả", "Nhập kho", "Xuất kho"]
         
         self.table = DataTable(columns, filters, self)
@@ -86,11 +86,11 @@ class HistoryView(QWidget):
                 qty_display = f"{log.get('quantity_changed', 0)} SP"
             
             raw_batch_id = log.get("batch_id", "00000000")
-            short_batch_id = raw_batch_id[:8] if len(raw_batch_id) > 8 else raw_batch_id
+            # short_batch_id = raw_batch_id[:8] if len(raw_batch_id) > 8 else raw_batch_id
             
             formatted_item = {
-                "product_name": f"📦  {log.get('barcode', 'N/A')}", # 
-                "barcode": f"#{short_batch_id}", # Hiển thị mã lô hàng dưới dạng rút gọn để dễ nhìn, đồng thời giữ lại dấu # để phân biệt với cột mã vạch sản phẩm
+                "product_name": f"{log.get('barcode', 'N/A')}", # 
+                "barcode": f"{raw_batch_id}", # Hiển thị mã lô hàng dưới dạng rút gọn để dễ nhìn, đồng thời giữ lại dấu # để phân biệt với cột mã vạch sản phẩm
                 "category": category, # Hiển thị loại nghiệp vụ (Nhập/Xuất) ngay trong cột này để dễ phân biệt
                 "stock": qty_display, # Hiển thị số lượng thay đổi với dấu +/- để dễ nhận biết ngay lập tức
                 "strategy_type": (log.get("timestamp", "N/A"), "normal"),

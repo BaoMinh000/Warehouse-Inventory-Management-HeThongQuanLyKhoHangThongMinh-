@@ -174,3 +174,12 @@ def history_view(db: Session = Depends(get_db)):
     service = InventoryService(db)
     HISTORY_DATA = service.get_inventory_history()
     return {"history": HISTORY_DATA}
+
+@router.get("/product-stock/{barcode}")
+def get_product_stock(barcode: str, db: Session = Depends(get_db)):
+    """API 7: Lấy thông tin tồn kho hiện tại của một sản phẩm theo mã vạch"""
+    service = InventoryService(db)
+    service.bootstrap_system()
+    
+    stock_info = service.get_product_stock(barcode)
+    return stock_info
