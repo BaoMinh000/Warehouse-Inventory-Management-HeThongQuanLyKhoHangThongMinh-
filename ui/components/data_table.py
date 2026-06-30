@@ -312,13 +312,19 @@ class DataTable(QWidget):
                 key = dict_keys[col_idx]
                 val = data_dict.get(key, "")
                 
-                # Nếu dữ liệu trường đó là Tuple dạng ("Thành công", "success") -> Vẽ ô hiển thị dạng Badge màu
+                # 1. Nếu dữ liệu là Tuple -> Vẽ Badge màu
                 if isinstance(val, tuple):
-                    badge_text = val[0] #
+                    badge_text = val[0]
                     badge_variant = val[1]
                     self._table.setCellWidget(r, col_idx, self._create_badge_cell(badge_text, badge_variant))
+                
+                # 2. ĐIỀU KIỆN MỚI: Nếu là phương pháp LIFO hoặc FIFO
+                elif str(val).strip() in ("LIFO", "FIFO"):
+                    method_widget = self._create_method_cell(str(val).strip())
+                    self._table.setCellWidget(r, col_idx, method_widget)
+                
+                # 3. Ngược lại, đổ chữ thông thường vào ô bảng dữ liệu
                 else:
-                    # Ngược lại, đổ chữ thông thường vào ô bảng dữ liệu
                     self._table.setItem(r, col_idx, self._create_text_item(str(val)))
             else:
                 self._table.setItem(r, col_idx, self._create_text_item(""))
@@ -331,6 +337,42 @@ class DataTable(QWidget):
             action_widget = self._create_action_cell(actions_list, r)
             self._table.setCellWidget(r, action_col_idx, action_widget)
 
+    def _create_method_cell(self, text: str) -> QWidget:
+        """Tạo ô đặc biệt cho LIFO/FIFO có viền, padding và màu nền"""
+        container = QWidget()
+        layout = QHBoxLayout(container)
+        # Đặt padding (lề) trên/dưới là 4px, trái/phải là 8px bao quanh chữ
+        layout.setContentsMargins(8, 4, 8, 4)
+        layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        
+        # Tạo label chứa chữ
+        label = QLabel(text)
+        
+        # Định nghĩa màu sắc riêng cho từng loại để giao diện trực quan hơn
+        if text == "FIFO":
+            bg_color = "#1E293B"      # Màu nền tối thanh lịch
+            border_color = "#38BDF8"  # Viền màu xanh Dương sáng
+            text_color = "#38BDF8"
+        else:  # LIFO
+            bg_color = "#1E293B"      # Màu nền tối
+            border_color = "#F59E0B"  # Viền màu Cam hổ phách
+            text_color = "#F59E0B"
+            
+        # Áp dụng CSS: border, padding nội bộ, border-radius bo góc nhẹ
+        label.setStyleSheet(
+            f"QLabel {{"
+            f"  background-color: {bg_color};"
+            f"  border: 1px solid {border_color};"
+            f"  color: {text_color};"
+            f"  padding: 2px 6px;"
+            f"  border-radius: 4px;"
+            f"  font-weight: bold;"
+            f"  font-size: 11px;"
+            f"}}"
+        )
+        
+        layout.addWidget(label)
+        return container
     def _on_cell_clicked(self, row: int, col: int):
         """Ánh xạ dòng giao diện ngược lại mảng dữ liệu gốc khi click vào một dòng bất kỳ"""
         if not self._filtered_data:
