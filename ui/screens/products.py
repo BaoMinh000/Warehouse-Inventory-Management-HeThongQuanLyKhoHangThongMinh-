@@ -1,10 +1,11 @@
 import os
 from PyQt6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, 
+    QDialog, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, 
     QLineEdit, QComboBox, QFrame, QStackedWidget, QTextEdit
 )
 from PyQt6.QtCore import Qt
-from ui.components.data_table import DataTable
+from ui.components.datatable.table_logic import DataTable
+from ui.components.form_dialog import ItemFormDialog
 from ui.utils.theme import Theme 
 # Import lớp điều phối nghiệp vụ vừa tách
 from ui.controllers.products_controller import ProductsController
@@ -51,6 +52,35 @@ class ProductsScreen(QWidget):
         self.input_desc.clear()
         self.input_loc.clear()
 
+    def handle_table_action(self, action_type: str, index: int):
+        """Xử lý khi người dùng bấm nút view/edit trên DataTable"""
+        
+        # 1. Lấy dữ liệu của dòng tương ứng dựa vào index
+        # (Lưu ý: _all_data lưu trữ danh sách gốc chứa các dict dữ liệu)
+        try:
+            row_data = self.table._all_data[index]
+        except IndexError:
+            return
+
+        # 2. Khởi tạo Form Dialog và truyền dữ liệu cùng chế độ ("view" hoặc "edit")
+        dialog = ItemFormDialog(data=row_data, mode=action_type, parent=self)
+        
+        # 3. Hiển thị Dialog và chờ kết quả
+        result = dialog.exec()
+        
+        # 4. Nếu ở chế độ 'edit' và người dùng bấm nút 'Lưu' (chấp nhận form)
+        if action_type == "edit" and result == QDialog.DialogCode.Accepted:
+            # Lấy dữ liệu đã chỉnh sửa từ form[cite: 4]
+            updated_data = dialog.get_updated_data()
+            
+            # --- TÍCH HỢP LOGIC CỦA BẠN TẠI ĐÂY ---
+            # Ví dụ: Gửi dữ liệu cập nhật qua Controller
+            # self.controller.handle_update_product(index, updated_data)
+            
+            # (Tùy chọn) Cập nhật trực tiếp UI bảng nếu không reload lại từ API
+            # self.table._all_data[index] = updated_data
+            # self.table._apply_filter()
+            
     def init_list_view(self):
         """Màn hình con 1: Bảng danh sách sản phẩm"""
         self.list_widget = QWidget()
@@ -136,6 +166,9 @@ class ProductsScreen(QWidget):
                 font-size: 12px; font-weight: bold; border: none; padding: 4px;
             }}
         """)
+        
+        # Kết nối tín hiệu action_clicked (trả về kiểu thao tác và vị trí index) tới hàm xử lý
+        self.table.action_clicked.connect(self.handle_table_action)
 
     def init_add_form_view(self):
         """Màn hình con 2: Form Thêm sản phẩm mới"""

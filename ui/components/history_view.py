@@ -1,6 +1,6 @@
 # ui/components/history_view.py
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton
-from ui.components.data_table import DataTable
+from ui.components.datatable.table_logic import DataTable
 
 class HistoryView(QWidget):
     def __init__(self, title, subtitle, back_btn_text, on_back_clicked, parent=None):
@@ -37,14 +37,15 @@ class HistoryView(QWidget):
 
         # --- DATA TABLE ---
         # Tự đóng gói cấu trúc cột và bộ lọc cố định của lịch sử kho tại đây
-        columns = ["📦 Sản phẩm (Barcode)", "Mã lô / Chứng từ", "Nghiệp vụ", "Số lượng thay đổi", "Thời gian hệ thống", "Thao tác"]
+        columns = ["📦 Sản phẩm (Barcode)", "Mã lô / Chứng từ", "Nghiệp vụ", "Số lượng thay đổi", "Thời gian hệ thống"]
         filters = ["Tất cả", "Nhập kho", "Xuất kho"]
         
         self.table = DataTable(columns, filters, self)
         layout.addWidget(self.table)
 
         # Khởi tạo bảng trống ban đầu
-        self.table.load_data([], status=True, action=True)
+        # self.table.load_data([], status=True, action=True)
+        self.table.load_data([], status=True, action=False)  # Đặt status=True để hiển thị cột trạng thái, action=True để hiển thị cột hành động
 
     def fetch_and_refresh_history(self, api_client):
         """Tự gọi API lấy dữ liệu, biến đổi cấu trúc và nạp trực tiếp lên bảng hiển thị"""
@@ -59,7 +60,7 @@ class HistoryView(QWidget):
                 formatted_history = self._map_api_to_ui_format(raw_history_list)
                 
                 # Nạp dữ liệu vào bảng
-                self.table.load_data(formatted_history, status=True, action=True)
+                self.table.load_data(formatted_history, status=True, action=False)
                 
                 # Tự động căn chỉnh độ rộng các cột vừa vặn với nội dung văn bản dữ liệu thật
                 if hasattr(self.table, 'view') and self.table.view:

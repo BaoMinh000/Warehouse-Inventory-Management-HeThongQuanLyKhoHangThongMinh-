@@ -183,3 +183,37 @@ def get_product_stock(barcode: str, db: Session = Depends(get_db)):
     
     stock_info = service.get_product_stock(barcode)
     return stock_info
+
+@router.get("/batch-details/{batch_id}")
+def get_batch_details(batch_id: int, db: Session = Depends(get_db)):
+    """API 8: Lấy thông tin chi tiết của một lô hàng theo batch_id"""
+    service = InventoryService(db)
+    service.bootstrap_system()
+    
+    batch_details = service.get_batch_details(batch_id)
+    if not batch_details:
+        raise HTTPException(status_code=404, detail=f"Lô hàng với batch_id {batch_id} không tồn tại.")
+    
+    return batch_details
+
+@router.post("/update-product/{barcode}")
+def update_product(barcode: str, payload: ProductCreateSchema, db: Session = Depends(get_db)):
+    """API 9: Cập nhật thông tin sản phẩm theo mã vạch"""
+    service = InventoryService(db)
+    service.bootstrap_system()
+    
+    try:
+        updated_product = service.update_product_info(
+            barcode=barcode,
+            new_product_name=payload.product_name,
+            new_category=payload.category,
+            new_strategy_type=payload.strategy_type
+        )
+        return {
+            "message": f"Cập nhật thông tin sản phẩm '{barcode}' thành công.",
+            "updated_product": updated_product
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Lỗi hệ thống khi cập nhật sản phẩm: {str(e)}")

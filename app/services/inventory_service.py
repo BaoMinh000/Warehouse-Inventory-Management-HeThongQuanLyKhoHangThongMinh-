@@ -216,3 +216,45 @@ class InventoryService:
             ]
 
         return {"total_quantity": total_quantity, "batches": batch_details}
+    
+    def update_product_info(self, barcode: str, product_name: str = None, strategy_type: str = None, category: str = None) -> bool:
+        """API 8: Cập nhật thông tin sản phẩm trong danh mục trên RAM và SQL DB"""
+        ram_node = self.bst.search(barcode) # Tìm Node sản phẩm trên RAM
+        if not ram_node:
+            return False
+
+        # Cập nhật thông tin trên RAM
+        if product_name:
+            ram_node.product_name = product_name
+        if strategy_type:
+            ram_node.strategy_type = strategy_type
+        if category:
+            ram_node.category = category
+
+        # Cập nhật trên SQL DB
+        db_product = self.db.query(ProductModel).filter(ProductModel.barcode == barcode).first()
+        if db_product:
+            if product_name:
+                db_product.product_name = product_name
+            if strategy_type:
+                db_product.strategy_type = strategy_type
+            if category:
+                db_product.category = category
+            self.db.commit()
+            return True
+        
+        return False
+    
+    def get_batch_details(self, batch_id: int) -> dict:
+        """API 9: Lấy thông tin chi tiết của một lô hàng theo batch_id từ SQL DB"""
+        db_batch = self.db.query(BatchModel).filter(BatchModel.batch_id == batch_id).first()
+        if not db_batch:
+            return None
+        
+        return {
+            "batch_id": db_batch.batch_id,
+            "barcode": db_batch.barcode,
+            "quantity": db_batch.quantity,
+            "expiry_date": db_batch.expiry_date.strftime("%Y-%m-%d"),
+            "import_date": db_batch.import_date.strftime("%Y-%m-%d %H:%M:%S")
+        }
