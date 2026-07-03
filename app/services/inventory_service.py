@@ -134,7 +134,7 @@ class InventoryService:
 
         while remaining_request > 0 and not ram_node.stock_collection.is_empty():
             # Lấy lô hàng hiện tại trên RAM và đối chiếu với bản ghi SQL
-            current_ram_batch = ram_node.stock_collection.peek()
+            current_ram_batch = ram_node.stock_collection.peek() # Lấy lô hàng đầu tiên (FIFO) hoặc cuối cùng (LIFO) mà không xóa khỏi RAM
             db_batch = self.db.query(BatchModel).filter(BatchModel.batch_id == current_ram_batch.batch_id).first()
 
             # Lưu lại các thông tin cần thiết trước khi có khả năng xóa đối tượng DB
@@ -169,6 +169,7 @@ class InventoryService:
                 "is_depleted": is_depleted,
                 "import_date": import_date_str
             })
+            # Cập nhật vào RAM
             
             # Ghi nhận Nhật ký vận hành hệ thống
             log = InventoryLogModel(
@@ -178,7 +179,7 @@ class InventoryService:
                 quantity_changed=qty_deducted
             )
             self.db.add(log)
-
+        # Commit tất cả các thay đổi vào Database SQL sau khi xử lý xong
         self.db.commit()
         return export_details    
     
@@ -223,15 +224,15 @@ class InventoryService:
         if not ram_node:
             return False
 
-        # Cập nhật thông tin trên RAM
+        # === Cập nhật thông tin trên RAM ===
         if product_name:
             ram_node.product_name = product_name
         if strategy_type:
             ram_node.strategy_type = strategy_type
         if category:
             ram_node.category = category
-
-        # Cập nhật trên SQL DB
+        # return print(f"[DEBUG] Cập nhật thông tin sản phẩm trên RAM: {ram_node.barcode}, {ram_node.product_name}, {ram_node.strategy_type}, {ram_node.category}")
+        # === Cập nhật trên SQL DB ===
         db_product = self.db.query(ProductModel).filter(ProductModel.barcode == barcode).first()
         if db_product:
             if product_name:

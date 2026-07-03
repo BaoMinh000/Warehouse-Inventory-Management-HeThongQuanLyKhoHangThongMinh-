@@ -31,11 +31,9 @@ class DashboardScreen(QScrollArea):
 
     def __init__(self, parent=None, api_client=None):
         super().__init__(parent)
-        self.api_client = api_client
         
-        # Bộ nhớ đệm dữ liệu gốc
-        self.raw_history_cached = [] 
-        self.products_catalog_cached = []  
+        # UI khởi tạo Controller để xử lý logic và gọi API
+        self.controller = DashboardDataController(api_client)
         self.current_filter_days = 7 
 
         self.setWidgetResizable(True)
@@ -55,13 +53,17 @@ class DashboardScreen(QScrollArea):
 
         root.addStretch()
         
-        # Khởi động lần đầu: Gọi API đồng bộ dữ liệu
-        self.load_history_chart()
+        # Khởi động lần đầu: Gọi hàm tổng hợp dữ liệu
+        self.load_dashboard_data()
+
+
+    def refresh_data(self):
+        """Hàm chuẩn hóa để main.py tự động gọi khi chuyển trang"""
+        self.load_dashboard_data()
 
     # --- HÀM TÁCH BIỆT XÂY DỰNG UI ---
 
     def _build_header(self) -> QHBoxLayout:
-        """Xây dựng phần tiêu đề Dashboard và các nút thao tác nhanh."""
         header = QHBoxLayout()
         title_block = QVBoxLayout()
         title_block.setSpacing(2)
@@ -76,15 +78,46 @@ class DashboardScreen(QScrollArea):
         title_block.addWidget(sub)
         header.addLayout(title_block, 1)
 
+        # Khởi tạo nút Refresh với biểu tượng (Icon text)
+        self.btn_refresh = QPushButton("⟳")
+        self.btn_refresh.setFixedSize(28, 28) # Đặt kích thước 28x28 để tạo hình tròn chuẩn với border-radius: 14px
+        
+        # Gắn style bạn cung cấp
+        self.btn_refresh.setStyleSheet(f"""
+            QPushButton {{
+                background: transparent;
+                border: 1px solid {Theme.BORDER_SIDEBAR};
+                border-radius: 14px;
+                color: {Theme.TEXT_MUTED};
+                font-size: 14px;
+                font-weight: bold;
+            }}
+            QPushButton:hover {{
+                background: {Theme.BG_NAV_HOVER if hasattr(Theme, 'BG_NAV_HOVER') else Theme.BG_BTN_HOVER};
+                border-color: {Theme.COLOR_PRIMARY};
+                color: {Theme.COLOR_PRIMARY};
+            }}
+            QPushButton:pressed {{
+                background: {Theme.BG_PANEL_DARK};
+            }}
+        """)
+        
+        # Bắt sự kiện click để tải lại dữ liệu Dashboard
+        if hasattr(self, "load_dashboard_data"):
+            self.btn_refresh.clicked.connect(self.load_dashboard_data)
+
+        # Các nút hiện có
         btn_period = QPushButton("🗓  Tuần này")
         btn_export = QPushButton("↓  Xuất báo cáo")
+        
+        # Thêm các nút vào Header (thêm nút refresh vào trước nút period)
+        header.addWidget(self.btn_refresh)
         header.addWidget(btn_period)
         header.addWidget(btn_export)
         
         return header
 
     def _build_stat_cards(self) -> QHBoxLayout:
-        """Xây dựng dãy thẻ thống kê số liệu (Thống kê SKU, Nhập, Xuất, Cảnh báo)."""
         stats_row = QHBoxLayout()
         stats_row.setSpacing(10)
         
@@ -109,18 +142,15 @@ class DashboardScreen(QScrollArea):
         return stats_row
 
     def _build_middle_row(self) -> QHBoxLayout:
-        """Xây dựng hàng giữa chứa: Biểu đồ cột (Biến động) và Biểu đồ tròn (Phân loại)."""
         mid = QHBoxLayout()
         mid.setSpacing(10)
 
-        # Thêm 2 panel con vào hàng giữa
         mid.addWidget(self._build_bar_chart_panel(), 1)
         mid.addWidget(self._build_donut_chart_panel())
         
         return mid
 
     def _build_bar_chart_panel(self) -> QFrame:
-        """Xây dựng Panel chứa biểu đồ cột biến động tồn kho kèm bộ lọc thời gian."""
         chart_panel = _panel()
         cp_lay = QVBoxLayout(chart_panel)
         cp_lay.setContentsMargins(14, 14, 14, 14)
@@ -129,7 +159,6 @@ class DashboardScreen(QScrollArea):
         cp_title_row = QHBoxLayout()
         cp_title_row.addWidget(_section_title("Biến động tồn kho"))
         
-        # Cụm nút bộ lọc thời gian
         filter_layout = QHBoxLayout()
         filter_layout.setSpacing(2)
         
@@ -166,6 +195,7 @@ class DashboardScreen(QScrollArea):
             filter_layout.addWidget(btn)
             self.btn_group.addButton(btn, days) 
             
+        # Gắn sự kiện UI gọi hàm cập nhật
         self.btn_group.idClicked.connect(self.on_filter_changed)
         cp_title_row.addLayout(filter_layout)
  
@@ -179,7 +209,6 @@ class DashboardScreen(QScrollArea):
         self.bar_chart_widget.setMinimumHeight(100)
         cp_lay.addWidget(self.bar_chart_widget, 1)
 
-        # Chú thích biểu đồ (Legend)
         legend_row = QHBoxLayout()
         for color, label in [(Theme.BTN_MINT_SUCCESS, "Nhập kho"), (Theme.COLOR_PRIMARY, "Xuất kho")]:
             dot = QLabel("●")
@@ -195,7 +224,6 @@ class DashboardScreen(QScrollArea):
         return chart_panel
 
     def _build_donut_chart_panel(self) -> QFrame:
-        """Xây dựng Panel chứa biểu đồ hình tròn phân loại lưu trữ (FIFO/LIFO/Mixed)."""
         donut_panel = _panel()
         donut_panel.setFixedWidth(200)
         dp_lay = QVBoxLayout(donut_panel)
@@ -236,7 +264,6 @@ class DashboardScreen(QScrollArea):
         return donut_panel
 
     def _build_activity_panel(self) -> QFrame:
-        """Xây dựng Panel dưới cùng chứa danh sách các hoạt động gần đây."""
         act_panel = _panel()
         ap_lay = QVBoxLayout(act_panel)
         ap_lay.setContentsMargins(14, 14, 14, 14)
@@ -254,68 +281,41 @@ class DashboardScreen(QScrollArea):
         
         return act_panel
 
-    # --- CÁC HÀM XỬ LÝ LOGIC & DATA (GIỮ NGUYÊN) ---
+    # --- CÁC HÀM XỬ LÝ SỰ KIỆN GIAO DIỆN & CẬP NHẬT UI ---
 
     def on_filter_changed(self, days_id):
         """Kích hoạt khi người dùng nhấn chuyển đổi Tab bộ lọc thời gian."""
         self.current_filter_days = days_id
-        self.process_and_render_chart()
+        self.render_bar_chart()
 
-    def load_history_chart(self):
-        """Gọi API kết nối để nạp dữ liệu lịch sử thô và danh mục sản phẩm."""
-        try:
-            if not self.api_client:
-                print("[CHART ERROR] API Client chưa được cấu hình trên Dashboard.")
-                return
-                
-            raw_history_list = self.api_client.get_inventory_history()
-            # print(f"[CHART LOG] Dữ liệu lịch sử thô nhận về: {raw_history_list[:2]} ...")
-            
-            if hasattr(self.api_client, 'get_catalog'):
-                self.products_catalog_cached = self.api_client.get_catalog()
-                print(f"[CHART LOG] Đã làm mới thành công {len(self.products_catalog_cached)} sản phẩm.")
-
-            if not raw_history_list:
-                print("[CHART LOG] Không có dữ liệu lịch sử từ mạng.")
-                return
-
-            self.raw_history_cached = raw_history_list
-            
-            # Gọi các hàm chịu trách nhiệm render đồ họa
-            self.process_and_render_chart()
-            self.process_and_render_donut_chart()
-            self.calculate_and_render_stat_cards()
+    def load_dashboard_data(self):
+        """Yêu cầu Controller lấy dữ liệu và kích hoạt cập nhật giao diện."""
+        # Gọi xuống lớp Controller để thực hiện logic API
+        success = self.controller.fetch_dashboard_data()
+        
+        if success:
+            self.render_bar_chart()
+            self.render_donut_chart()
+            self.render_stat_cards()
             self.render_recent_activities()
 
-        except Exception as e:
-            print(f"[CHART ERROR] Gặp sự cố khi nạp dữ liệu từ API: {str(e)}")
-
     def render_recent_activities(self): 
-        """Gọi Controller định dạng dữ liệu và cập nhật ActivityFeed."""
+        """Nhận dữ liệu từ Controller và hiển thị lên ActivityFeed."""
         try:
-            search_fn = getattr(self.api_client, 'search_product', None) if self.api_client else None
-            
-            formatted_tuples = DashboardDataController.process_recent_activities(
-                self.raw_history_cached, 
-                search_product_fn=search_fn
-            )
+            formatted_tuples = self.controller.get_recent_activities()
 
             if hasattr(self.activity_feed, 'load_items'):
                 self.activity_feed.load_items(formatted_tuples)
-                print(f"[ACTIVITY LOG] Đã đồng bộ {len(formatted_tuples)} hoạt động lên giao diện.")
             else:
                 print("[ACTIVITY ERROR] Không tìm thấy hàm load_items trên component ActivityFeed.")
 
         except Exception as e:
-            print(f"[ACTIVITY ERROR] Gặp lỗi khi render feed: {str(e)}")
+            print(f"[UI ERROR] Gặp lỗi khi render feed: {str(e)}")
 
-    def calculate_and_render_stat_cards(self):
-        """Nhận chỉ số từ Controller và hiển thị trực tiếp lên StatCards."""
+    def render_stat_cards(self):
+        """Lấy chỉ số thống kê từ Controller và hiển thị lên StatCards."""
         try:
-            stats = DashboardDataController.calculate_stat_cards(
-                self.products_catalog_cached, 
-                self.raw_history_cached
-            )
+            stats = self.controller.get_stat_cards_data()
 
             self.card_sku.update_value(f"{stats['total_skus']:,}")
             self.card_sku.update_subtext("Đã đồng bộ từ danh mục")
@@ -330,18 +330,12 @@ class DashboardScreen(QScrollArea):
             self.card_warn.update_subtext(f"{stats['count_expired_soon']} sắp hết hạn")
 
         except Exception as e:
-            print(f"[STAT ERROR] Lỗi khi render thẻ thống kê: {str(e)}")
+            print(f"[UI ERROR] Lỗi khi render thẻ thống kê: {str(e)}")
 
-    def process_and_render_chart(self):
-        """Gọi Controller xử lý và cập nhật BarChart."""
+    def render_bar_chart(self):
+        """Nhận dữ liệu biểu đồ cột từ Controller theo bộ lọc và cập nhật BarChart."""
         try:
-            if not self.raw_history_cached:
-                return
-
-            chart_data_tuples = DashboardDataController.process_history_for_double_chart(
-                self.raw_history_cached, 
-                self.current_filter_days
-            )
+            chart_data_tuples = self.controller.get_chart_data(self.current_filter_days)
 
             if hasattr(self.bar_chart_widget, 'set_data'):
                 self.bar_chart_widget.set_data(chart_data_tuples)
@@ -352,17 +346,12 @@ class DashboardScreen(QScrollArea):
                 self.bar_chart_widget.update()
                     
         except Exception as e:
-            print(f"[CHART ERROR] Gặp lỗi khi render biểu đồ cột: {str(e)}")
+            print(f"[UI ERROR] Gặp lỗi khi render biểu đồ cột: {str(e)}")
 
-    def process_and_render_donut_chart(self):
-        """Gọi Controller tính toán tỷ lệ phần trăm và cập nhật DonutChart."""
+    def render_donut_chart(self):
+        """Lấy phần trăm phân loại từ Controller và cập nhật DonutChart."""
         try:
-            if not self.products_catalog_cached:
-                return
-
-            pct_fifo, pct_lifo, pct_mixed, total_products = DashboardDataController.process_donut_chart_data(
-                self.products_catalog_cached
-            )
+            pct_fifo, pct_lifo, pct_mixed, total_products = self.controller.get_donut_chart_data()
 
             if hasattr(self, 'donut') and self.donut:
                 if hasattr(self.donut, 'set_segments'):
@@ -383,4 +372,4 @@ class DashboardScreen(QScrollArea):
             if self.lbl_pct_mixed: self.lbl_pct_mixed.setText(f"{pct_mixed}%")
 
         except Exception as e:
-            print(f"[DONUT ERROR] Gặp lỗi khi render biểu đồ tròn: {str(e)}")
+            print(f"[UI ERROR] Gặp lỗi khi render biểu đồ tròn: {str(e)}")

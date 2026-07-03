@@ -177,4 +177,3 @@ if __name__ == "__main__":
             backend_process.terminate()
             backend_process.join()
         print("[SYSTEM] Hệ thống đã đóng an toàn.")
-

@@ -205,9 +205,9 @@ def update_product(barcode: str, payload: ProductCreateSchema, db: Session = Dep
     try:
         updated_product = service.update_product_info(
             barcode=barcode,
-            new_product_name=payload.product_name,
-            new_category=payload.category,
-            new_strategy_type=payload.strategy_type
+            product_name=payload.product_name,
+            category=payload.category,
+            strategy_type=payload.strategy_type
         )
         return {
             "message": f"Cập nhật thông tin sản phẩm '{barcode}' thành công.",

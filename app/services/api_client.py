@@ -156,3 +156,26 @@ class InventoryAPIClient:
             raise ConnectionError("Mất kết nối tới máy chủ Backend khi lấy tồn kho sản phẩm.")
         except Exception as e:
             raise ValueError(f"Lỗi hệ thống khi lấy tồn kho sản phẩm: {str(e)}")
+        
+    def update_product(self, barcode: str, name: str, strategy: str, category: str) -> bool:
+        """Gọi API POST để cập nhật thông tin sản phẩm theo mã vạch. Trả về True nếu thành công, False nếu thất bại."""
+        url = f"{self.base_url}/update-product/{barcode}"
+        
+        # BỔ SUNG "barcode" VÀO ĐÂY ĐỂ ĐÁP ỨNG SCHEMA CỦA BACKEND
+        payload = {
+            "barcode": barcode,  
+            "product_name": name,
+            "category": category,
+            "strategy_type": strategy
+        }
+        
+        print(f"[API Client] Gọi POST {url} với payload: {payload}")
+        try:
+            response = requests.post(url, json=payload)
+            if response.status_code == 200:
+                return True
+            else:
+                error_msg = response.json().get("detail", "Lỗi không xác định khi cập nhật sản phẩm.")
+                raise ValueError(error_msg)
+        except requests.exceptions.ConnectionError:
+            raise ConnectionError("Mất kết nối tới máy chủ Backend khi cập nhật sản phẩm.")

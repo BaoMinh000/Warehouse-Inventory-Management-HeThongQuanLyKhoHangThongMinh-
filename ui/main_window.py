@@ -66,17 +66,23 @@ class MainWindow(QMainWindow):
         if key in self.screens:
             target_widget = self.screens[key]
             
-            # 1. Thực hiện chuyển giao diện sang màn hình được chọn (ví dụ: products)
+            # 1. Thực hiện chuyển giao diện sang màn hình được chọn
             self.stacked_widget.setCurrentWidget(target_widget)
             
-            # 2. Đón đầu: Nếu màn hình vừa mở là ProductsScreen (hoặc bất kỳ màn hình nào có hàm load API)
-            # Hệ thống sẽ tự động ra lệnh gọi API cập nhật dữ liệu ngay lập tức!
-            if hasattr(target_widget, "load_products_from_api"):
-                target_widget.load_products_from_api()
+            # 2. Đón đầu: Tự động gọi API cập nhật dữ liệu khi trang hiển thị
+            
+            # # Dành cho trang ProductsScreen
+            # if hasattr(target_widget, "load_products_from_api"):
+            #     target_widget.load_products_from_api()
                 
-            # (Tùy chọn) Nếu sau này bạn có viết thêm hàm refresh cho các màn hình khác như Dashboard, Expiry...
-            elif hasattr(target_widget, "refresh_data"):
-                target_widget.refresh_data()
+            # # THÊM MỚI: Dành cho trang DashboardScreen
+            # # Khi chuyển về trang chủ, nó sẽ tự động chạy lại luồng như lần đầu
+            # elif hasattr(target_widget, "load_dashboard_data"):
+            #     target_widget.load_dashboard_data()
+                
+            # # (Tùy chọn) Dành cho các màn hình khác dùng chuẩn hàm refresh_data
+            # elif hasattr(target_widget, "refresh_data"):
+            #     target_widget.refresh_data()
 
     def _load_stylesheet(self):
         # Định vị đường dẫn file styles.qss tương đối từ thư mục chạy dự án

@@ -183,6 +183,7 @@ class DataTableUI(QWidget):
     # --- CÁC HÀM HỖ TRỢ VẼ UI ---
     def _create_method_cell(self, text: str) -> QWidget:
         container = QWidget()
+        container.setStyleSheet("background: transparent;")
         layout = QHBoxLayout(container)
         layout.setContentsMargins(8, 4, 8, 4)
         layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -225,6 +226,7 @@ class DataTableUI(QWidget):
         item.setTextAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
         return item    
 
+    # --- CÁC HÀM HỖ TRỢ XỬ LÝ LOGIC ---
     def _pill_style(self, active: bool) -> str:
         if active:
             return f"QPushButton {{ font-size:10px; padding:4px 9px; border-radius:10px; background:{Theme.BG_BTN_ACTIVE}; color:{Theme.COLOR_PRIMARY}; border:1px solid {Theme.BORDER_ACTIVE}; }}"

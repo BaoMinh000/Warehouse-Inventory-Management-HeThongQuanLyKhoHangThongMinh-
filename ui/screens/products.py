@@ -5,7 +5,7 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import Qt
 from ui.components.datatable.table_logic import DataTable
-from ui.components.form_dialog import ItemFormDialog
+from ui.components.item_form.item_form_dialog import ItemFormDialog
 from ui.utils.theme import Theme 
 # Import lớp điều phối nghiệp vụ vừa tách
 from ui.controllers.products_controller import ProductsController
@@ -17,7 +17,7 @@ class ProductsScreen(QWidget):
         
         # Khởi tạo Controller điều phối hành vi
         self.controller = ProductsController(self, api_client)
-
+        self.api_client = api_client
         # Quản lý trạng thái chuyển đổi màn hình dạng Stack
         self.stack = QStackedWidget(self)
         main_layout = QVBoxLayout(self)
@@ -34,6 +34,10 @@ class ProductsScreen(QWidget):
 
         # Ủy quyền cho controller nạp dữ liệu lần đầu
         self.controller.handle_load_products()
+
+    # =========================================================
+    # CÁC HÀM XỬ LÝ SỰ KIỆN & ĐIỀU HƯỚNG
+    # =========================================================
 
     def switch_to_list_view(self):
         """Chuyển đổi giao diện về màn hình danh sách chính."""
@@ -54,56 +58,58 @@ class ProductsScreen(QWidget):
 
     def handle_table_action(self, action_type: str, index: int):
         """Xử lý khi người dùng bấm nút view/edit trên DataTable"""
-        
-        # 1. Lấy dữ liệu của dòng tương ứng dựa vào index
-        # (Lưu ý: _all_data lưu trữ danh sách gốc chứa các dict dữ liệu)
         try:
             row_data = self.table._all_data[index]
         except IndexError:
             return
 
-        # 2. Khởi tạo Form Dialog và truyền dữ liệu cùng chế độ ("view" hoặc "edit")
-        dialog = ItemFormDialog(data=row_data, mode=action_type, parent=self)
-        
-        # 3. Hiển thị Dialog và chờ kết quả
+        dialog = ItemFormDialog(data=row_data, mode=action_type, api_client=self.api_client, parent=self)
         result = dialog.exec()
         
-        # 4. Nếu ở chế độ 'edit' và người dùng bấm nút 'Lưu' (chấp nhận form)
         if action_type == "edit" and result == QDialog.DialogCode.Accepted:
-            # Lấy dữ liệu đã chỉnh sửa từ form[cite: 4]
             updated_data = dialog.get_updated_data()
-            
-            # --- TÍCH HỢP LOGIC CỦA BẠN TẠI ĐÂY ---
-            # Ví dụ: Gửi dữ liệu cập nhật qua Controller
             # self.controller.handle_update_product(index, updated_data)
-            
-            # (Tùy chọn) Cập nhật trực tiếp UI bảng nếu không reload lại từ API
-            # self.table._all_data[index] = updated_data
-            # self.table._apply_filter()
-            
+
+    # =========================================================
+    # GIAO DIỆN 1: MÀN HÌNH DANH SÁCH (LIST VIEW)
+    # =========================================================
+
     def init_list_view(self):
-        """Màn hình con 1: Bảng danh sách sản phẩm"""
+        """Khởi tạo container cho màn hình danh sách sản phẩm"""
         self.list_widget = QWidget()
         layout = QVBoxLayout(self.list_widget)
         layout.setContentsMargins(16, 16, 16, 16)
         layout.setSpacing(12)
 
-        # Header bar
+        # Lắp ráp các thành phần Header và Bảng dữ liệu
+        layout.addLayout(self._build_list_header())
+        layout.addWidget(self._build_list_table())
+
+        # Style áp dụng chung cho Table nằm trong màn hình này
+        self.setStyleSheet(f"""
+            QTableWidget {{ background: transparent; gridline-color: {Theme.BORDER_SIDEBAR}; }}
+            QHeaderView::section {{
+                background: transparent; color: {Theme.TEXT_SUB};
+                font-size: 12px; font-weight: bold; border: none; padding: 4px;
+            }}
+        """)
+
+    def _build_list_header(self) -> QHBoxLayout:
+        """Xây dựng thanh công cụ Header của danh sách"""
         header = QHBoxLayout()
         title_lay = QVBoxLayout()
         title_row = QHBoxLayout()
         title_row.setSpacing(8)
 
+        # Tiêu đề
         title = QLabel("Danh mục sản phẩm")
         title.setStyleSheet(f"background: transparent; font-size: 16px; font-weight: bold; color: {Theme.TEXT_MAIN};")
 
+        # Nút Refresh
         self.btn_refresh = QPushButton("↻")
         self.btn_refresh.setFixedSize(28, 28)
         self.btn_refresh.setCursor(Qt.CursorShape.PointingHandCursor)
-        
-        # SỰ KIỆN: Ủy quyền thẳng cho hàm handle_load_products của controller
         self.btn_refresh.clicked.connect(self.controller.handle_load_products)
-
         self.btn_refresh.setStyleSheet(f"""
             QPushButton {{
                 background: transparent;
@@ -118,21 +124,21 @@ class ProductsScreen(QWidget):
                 border-color: {Theme.COLOR_PRIMARY};
                 color: {Theme.COLOR_PRIMARY};
             }}
-            QPushButton:pressed {{
-                background: {Theme.BG_PANEL_DARK};
-            }}
+            QPushButton:pressed {{ background: {Theme.BG_PANEL_DARK}; }}
         """)
 
         title_row.addWidget(title)
         title_row.addWidget(self.btn_refresh)
         title_row.addStretch()
 
+        # Phụ đề
         subtitle = QLabel("Quản lý danh sách mã hàng, vị trí và định mức tồn kho")
         subtitle.setStyleSheet(f"background: transparent; font-size: 11px; color: {Theme.TEXT_MUTED};")
 
         title_lay.addLayout(title_row)
         title_lay.addWidget(subtitle)
             
+        # Nút thêm mới
         add_btn = QPushButton("+ Thêm sản phẩm")
         add_btn.setObjectName("action_btn")
         add_btn.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -149,34 +155,30 @@ class ProductsScreen(QWidget):
         header.addLayout(title_lay)
         header.addStretch()
         header.addWidget(add_btn)
-        layout.addLayout(header)
+        
+        return header
 
-        # Cấu hình DataTable
+    def _build_list_table(self) -> DataTable:
+        """Khởi tạo và cấu hình DataTable"""
         columns = ["Sản phẩm", "Barcode", "Danh mục",  "Loại", "Thao tác"]
         filters = ["Tất cả", "Thực phẩm", "Hóa mỹ phẩm", "Đồ uống", "Vật tư"]
         
-        # Truyền đối tượng cha để DataTable có thể callback
         self.table = DataTable(columns, filters, self) 
-        layout.addWidget(self.table)
-        
-        self.setStyleSheet(f"""
-            QTableWidget {{ background: transparent; gridline-color: {Theme.BORDER_SIDEBAR}; }}
-            QHeaderView::section {{
-                background: transparent; color: {Theme.TEXT_SUB};
-                font-size: 12px; font-weight: bold; border: none; padding: 4px;
-            }}
-        """)
-        
-        # Kết nối tín hiệu action_clicked (trả về kiểu thao tác và vị trí index) tới hàm xử lý
         self.table.action_clicked.connect(self.handle_table_action)
+        return self.table
+
+    # =========================================================
+    # GIAO DIỆN 2: MÀN HÌNH FORM THÊM MỚI (ADD FORM VIEW)
+    # =========================================================
 
     def init_add_form_view(self):
-        """Màn hình con 2: Form Thêm sản phẩm mới"""
+        """Khởi tạo container cho Form thêm sản phẩm"""
         self.add_widget = QWidget()
         layout = QVBoxLayout(self.add_widget)
         layout.setContentsMargins(16, 16, 16, 16)
         layout.setSpacing(16)
 
+        # Style mặc định cho các input trong Form
         self.add_widget.setStyleSheet(f"""
             QLabel {{ color: {Theme.TEXT_MUTED}; font-size: 12px; background: transparent; }}
             QLineEdit, QComboBox, QTextEdit {{
@@ -187,7 +189,18 @@ class ProductsScreen(QWidget):
             QComboBox::drop-down {{ border: none; padding-right: 10px; }}
         """)
 
-        # --- HEADER BAR ---
+        # Lắp ráp Header và Body của Form
+        layout.addLayout(self._build_add_header())
+        
+        body_layout = QHBoxLayout()
+        body_layout.setSpacing(16)
+        body_layout.addWidget(self._build_add_left_panel(), 1)
+        body_layout.addWidget(self._build_add_right_panel(), 1)
+        
+        layout.addLayout(body_layout)
+
+    def _build_add_header(self) -> QHBoxLayout:
+        """Xây dựng Header cho Form thêm mới"""
         header = QHBoxLayout()
         title_lay = QVBoxLayout()
         title = QLabel("Thêm sản phẩm mới")
@@ -213,13 +226,11 @@ class ProductsScreen(QWidget):
         header.addLayout(title_lay)
         header.addStretch()
         header.addWidget(back_btn)
-        layout.addLayout(header)
+        
+        return header
 
-        # --- BODY CONTENT ---
-        body_layout = QHBoxLayout()
-        body_layout.setSpacing(16)
-
-        # CỘT TRÁI: THÔNG TIN CƠ BẢN CỦA SẢN PHẨM
+    def _build_add_left_panel(self) -> QFrame:
+        """Xây dựng Cột Trái: Thông tin cơ bản"""
         left_box = QFrame()
         left_box.setStyleSheet(f"QFrame {{ background: {Theme.BG_PANEL_DARK}; border: 1px solid {Theme.BORDER_PANEL_DARK}; border-radius: 8px; }}")
         left_layout = QVBoxLayout(left_box)
@@ -263,9 +274,10 @@ class ProductsScreen(QWidget):
         left_layout.addWidget(self.input_desc)
         left_layout.addStretch()
 
-        body_layout.addWidget(left_box, 1)
+        return left_box
 
-        # CỘT PHẢI: THIẾT LẬP QUẢN TRỊ KHO
+    def _build_add_right_panel(self) -> QFrame:
+        """Xây dựng Cột Phải: Cấu hình quản trị kho"""
         right_box = QFrame()
         right_box.setStyleSheet(f"QFrame {{ background: {Theme.BG_PANEL_DARK}; border: 1px solid {Theme.BORDER_PANEL_DARK}; border-radius: 8px; }}")
         right_layout = QVBoxLayout(right_box)
@@ -282,8 +294,17 @@ class ProductsScreen(QWidget):
         right_layout.addWidget(self.cbo_strategy)
 
         row_limit = QHBoxLayout()
-        col_min = QVBoxLayout(); col_min.addWidget(QLabel("Định mức tối thiểu (Min)")); self.input_min = QLineEdit("10"); col_min.addWidget(self.input_min); row_limit.addLayout(col_min, 1)
-        col_max = QVBoxLayout(); col_max.addWidget(QLabel("Định mức tối đa (Max)")); self.input_max = QLineEdit("5000"); col_max.addWidget(self.input_max); row_limit.addLayout(col_max, 1)
+        col_min = QVBoxLayout()
+        col_min.addWidget(QLabel("Định mức tối thiểu (Min)"))
+        self.input_min = QLineEdit("10")
+        col_min.addWidget(self.input_min)
+        row_limit.addLayout(col_min, 1)
+        
+        col_max = QVBoxLayout()
+        col_max.addWidget(QLabel("Định mức tối đa (Max)"))
+        self.input_max = QLineEdit("5000")
+        col_max.addWidget(self.input_max)
+        row_limit.addLayout(col_max, 1)
         right_layout.addLayout(row_limit)
 
         right_layout.addWidget(QLabel("Vị trí lưu trữ mặc định (Kệ/Dãy)"))
@@ -291,6 +312,7 @@ class ProductsScreen(QWidget):
         self.input_loc.setPlaceholderText("Ví dụ: Khu A, Kệ A-01-02...")
         right_layout.addWidget(self.input_loc)
 
+        # Panel ghi chú
         note_panel = QFrame()
         note_panel.setStyleSheet(f"QFrame {{ background: {Theme.BG_PANEL_SUMMARY}; border-radius: 6px; border: none; }}")
         np_lay = QVBoxLayout(note_panel)
@@ -305,6 +327,7 @@ class ProductsScreen(QWidget):
         np_lay.addWidget(lbl_np_c)
         right_layout.addWidget(note_panel)
 
+        # Nút Lưu
         btn_save = QPushButton("Lưu sản phẩm mới")
         btn_save.setCursor(Qt.CursorShape.PointingHandCursor)
         btn_save.setStyleSheet(f"""
@@ -319,11 +342,9 @@ class ProductsScreen(QWidget):
             }}
             QPushButton:hover {{ background: {Theme.BTN_MINT_HOVER}; }}
         """)
-        
-        # SỰ KIỆN: Ủy quyền lưu sản phẩm cho Controller điều phối
         btn_save.clicked.connect(self.controller.handle_save_product)
 
         right_layout.addWidget(btn_save)
         right_layout.addStretch()
-        body_layout.addWidget(right_box, 1)
-        layout.addLayout(body_layout)
+        
+        return right_box

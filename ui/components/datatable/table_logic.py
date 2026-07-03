@@ -10,8 +10,8 @@ class DataTable(DataTableUI):
     """Lớp xử lý Logic bao gồm: Lọc dữ liệu, phân trang và bắn tín hiệu"""
     
     # Định nghĩa 2 tín hiệu (Signal)
-    row_selected = pyqtSignal(int)          
-    action_clicked = pyqtSignal(str, int)   
+    row_selected = pyqtSignal(int)       # (index của dòng được chọn trong danh sách gốc)    
+    action_clicked = pyqtSignal(str, int)    # (action_type, row_index)
 
     def __init__(self, columns: list[str], filters: list[str] | None = None, parent=None):
         super().__init__(columns, filters, parent)
@@ -132,7 +132,7 @@ class DataTable(DataTableUI):
                 val = data_dict.get(key, "")
                 
                 if isinstance(val, tuple):
-                    badge_text = val[0]
+                    badge_text = val[0] # VD: 
                     badge_variant = val[1]
                     self._table.setCellWidget(r, col_idx, self._create_badge_cell(badge_text, badge_variant))
                 
@@ -156,10 +156,11 @@ class DataTable(DataTableUI):
     def _create_action_cell(self, actions_list: list, row_index: int) -> QWidget:
         """Tạo widget hành động và gán trực tiếp sự kiện logic"""
         container = QWidget()
-        layout = QHBoxLayout(container)
+        container.setStyleSheet("background: transparent;")
+        layout = QHBoxLayout(container) # Hiển thị các nút hành động theo chiều ngang
         layout.setContentsMargins(8, 0, 8, 0)
         layout.setSpacing(6)
-        layout.setAlignment(Qt.AlignmentFlag.AlignCenter) 
+        layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
         
         for action_type, svg_str in actions_list:
             btn = _TableActionButton(svg_str, action_type)
