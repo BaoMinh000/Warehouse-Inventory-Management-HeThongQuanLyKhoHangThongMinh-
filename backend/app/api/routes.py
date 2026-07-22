@@ -5,8 +5,8 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
-from app.services.inventory_service import InventoryService
-from app.models.db_models import ProductModel
+from services.inventory_service import InventoryService
+from models.db_models import ProductModel
 
 # Khởi tạo router của FastAPI
 router = APIRouter(prefix="/api/inventory", tags=["Inventory Management"])
@@ -34,7 +34,7 @@ class ProductResponseSchema(BaseModel):
     category: str
     strategy_type: str
 # --- HÀM TRỢ GIÚP LẤY KẾT NỐI DATABASE (DEPENDENCY) ---
-from app.database import SessionLocal 
+from database import SessionLocal 
 
 def get_db():
     db = SessionLocal()
@@ -217,3 +217,17 @@ def update_product(barcode: str, payload: ProductCreateSchema, db: Session = Dep
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Lỗi hệ thống khi cập nhật sản phẩm: {str(e)}")
+
+@router.delete("/delete-product/{barcode}")
+def delete_product(barcode: str, db: Session = Depends(get_db)):
+    """API 10: Xóa sản phẩm theo mã vạch"""
+    service = InventoryService(db)
+    service.bootstrap_system()
+    
+    try:
+        service.delete_product(barcode)
+        return {"message": f"Xóa sản phẩm với mã vạch '{barcode}' thành công."}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Lỗi hệ thống khi xóa sản phẩm: {str(e)}")

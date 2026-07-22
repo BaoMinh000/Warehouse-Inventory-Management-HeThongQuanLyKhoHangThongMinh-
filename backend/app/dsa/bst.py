@@ -1,7 +1,7 @@
 # app/dsa/bst.py
 from typing import Optional, List, Tuple
-from app.dsa.queue import Queue
-from app.dsa.stack import Stack
+from dsa.queue import Queue
+from dsa.stack import Stack
 
 class Batch: # Lô hàng
     """Đại diện cho một lô hàng cụ thể trong kho"""
@@ -15,12 +15,11 @@ class Batch: # Lô hàng
 class ProductNode: 
     """Đại diện cho một Node sản phẩm trên cây tìm kiếm nhị phân (BST)"""
     def __init__(self, barcode: str, product_name: str, strategy_type: str, category: str = "Thực phẩm"):
-        self.barcode: str = barcode               # Khóa chính (Key) điều hướng và sắp xếp cây BST
-        self.product_name: str = product_name     # Tên sản phẩm
-        self.category: str = category             # Danh mục sản phẩm (Mặc định: "Thực phẩm")
+        self.barcode: str = barcode               
+        self.product_name: str = product_name     
+        self.category: str = category
         self.strategy_type: str = strategy_type   # Chiến lược xuất kho: "FIFO" hoặc "LIFO"  
 
-        # Khởi tạo cấu trúc lưu trữ lô hàng tương ứng với chiến lược cấu hình
         if strategy_type == "FIFO":
             self.stock_collection = Queue()
         elif strategy_type == "LIFO":

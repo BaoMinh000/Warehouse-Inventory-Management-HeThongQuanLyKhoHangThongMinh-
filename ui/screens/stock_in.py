@@ -4,7 +4,7 @@ from PyQt6.QtWidgets import (
     QLineEdit, QComboBox, QDateEdit, QTextEdit, QFrame, QStackedWidget
 )
 from PyQt6.QtCore import Qt, QDate
-from app.services.api_client import InventoryAPIClient
+from backend.app.services.api_client import InventoryAPIClient
 from ui.utils.theme import Theme 
 # Import lớp điều phối nghiệp vụ vừa tách
 from ui.controllers.stock_in_controller import StockInController

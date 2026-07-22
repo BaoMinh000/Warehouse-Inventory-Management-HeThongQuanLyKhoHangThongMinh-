@@ -15,6 +15,7 @@ from ui.utils.theme import Theme
 
 SVG_VIEW = os.getenv("SVG_VIEW", "")
 SVG_EDIT = os.getenv("SVG_EDIT", "")
+SVG_DELETE = os.getenv("SVG_DELETE", "")
 
 class _TableActionButton(QPushButton):
     """Nút thao tác nhỏ (Xem/Sửa) nằm trong ô cuối cùng của mỗi dòng.

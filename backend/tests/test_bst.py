@@ -1,6 +1,6 @@
 # tests/test_bst.py
 import pytest
-from app.dsa.bst import BinarySearchTree
+from dsa.bst import BinarySearchTree
 
 def test_insert_and_search_product():
     """Kiểm tra xem thêm sản phẩm vào cây thì có tìm lại được đúng sản phẩm đó không"""

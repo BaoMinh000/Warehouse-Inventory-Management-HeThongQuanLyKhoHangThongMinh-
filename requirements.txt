@@ -4,8 +4,9 @@ python-dotenv
 python-dateutil
 pytest
 pytest-cov
-PyQt6
 fastapi
 uvicorn
 requests
 python-dotenv
+# UI framework for building interactive web apps in Python
+PyQt6

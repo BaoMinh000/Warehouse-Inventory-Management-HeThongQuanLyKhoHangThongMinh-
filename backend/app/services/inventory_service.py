@@ -3,9 +3,9 @@
 #Kết nối từ main.py -> routes.py -> inventory_service.py để xử lý logic nghiệp vụ đồng bộ RAM & SQL cho server backend
 from datetime import datetime
 from sqlalchemy.orm import Session
-from app.dsa.bst import BinarySearchTree
-from app.dsa.bst import Batch as DSABatch  # Alias để phân biệt với Model SQL
-from app.models.db_models import ProductModel, BatchModel, InventoryLogModel
+from dsa.bst import BinarySearchTree
+from dsa.bst import Batch as DSABatch  # Alias để phân biệt với Model SQL
+from models.db_models import ProductModel, BatchModel, InventoryLogModel
 
 class InventoryService:
     """Lớp nghiệp vụ điều phối dữ liệu giữa cây BST trên RAM và Cơ sở dữ liệu SQL (Chỉ chạy ở Backend)"""
@@ -259,3 +259,23 @@ class InventoryService:
             "expiry_date": db_batch.expiry_date.strftime("%Y-%m-%d"),
             "import_date": db_batch.import_date.strftime("%Y-%m-%d %H:%M:%S")
         }
+        
+    def delete_product(self, barcode: str) -> bool:
+        """API 10: Xóa sản phẩm khỏi danh mục trên RAM và SQL DB"""
+        ram_node = self.bst.search(barcode)
+        if not ram_node:
+            return False
+
+        # === Xóa trên RAM ===
+        self.bst.delete(barcode)
+
+        # === Xóa trên SQL DB ===
+        db_product = self.db.query(ProductModel).filter(ProductModel.barcode == barcode).first()
+        if db_product:
+            # Xóa tất cả các lô hàng liên quan trước khi xóa sản phẩm
+            self.db.query(BatchModel).filter(BatchModel.barcode == barcode).delete()
+            self.db.delete(db_product)
+            self.db.commit()
+            return True
+        
+        return False
